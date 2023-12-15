@@ -10,7 +10,12 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Mime\Encoder\EncoderInterface;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Serializer\Encoder\JsonEncode;
+use Symfony\Component\Serializer\Encoder\JsonEncoder;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Serializer\SerializerInterface;
 
 
 /**
@@ -25,7 +30,10 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route('/movie')]
 class MovieController extends AbstractController
 {
-    public function __construct(private ServersController $serversController)
+    public function __construct(
+        private ServersController $serversController,
+        private SerializerInterface $serializer
+    )
     {
     }
     /**
@@ -38,11 +46,19 @@ class MovieController extends AbstractController
     public function search($query, Request $request): JsonResponse
     {
         $movieList = $this->serversController->search($query);
-
-        return $this->json([
+        $json = $this->serializer->serialize(
+            $movieList,
+            'json',
+            [
+                AbstractNormalizer::GROUPS => 'movie_export',
+                JsonEncode::OPTIONS => JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            ]
+        );
+dd($json);
+        return new JsonResponse([
             'type' => 'search',
             "title" => $query,
-            "result" => $movieList,
+            "result" => $json,
         ]);
     }
 
@@ -51,7 +67,7 @@ class MovieController extends AbstractController
     {
         //todo: validate input of the movie id
         $movieList =  $this->serversController->fetchMovie($movie);
-        dd('fetchMovie', $movieList);
+
         return $this->json([
             'message' => 'Welcome to fetch',
             'path' => 'src/Controller/MovieController.php',

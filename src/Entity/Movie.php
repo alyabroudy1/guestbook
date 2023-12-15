@@ -7,6 +7,8 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Annotation\MaxDepth;
 
 #[ORM\Entity(repositoryClass: MovieRepository::class)]
 class Movie
@@ -19,45 +21,62 @@ class Movie
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups('movie_export')]
     private ?int $id = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups('movie_export')]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups('movie_export')]
     private ?string $description = null;
 
     #[ORM\Column(type: Types::SMALLINT, nullable: true)]
+    #[Groups('movie_export')]
     private ?int $state = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups('movie_export')]
     private ?string $cardImage = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups('movie_export')]
     private ?string $backgroundImage = null;
 
     #[ORM\Column(length: 50, nullable: true)]
+    #[Groups('movie_export')]
     private ?string $rate = null;
 
     #[ORM\Column(nullable: true)]
+    #[Groups('movie_export')]
     private ?int $playedTime = null;
 
     #[ORM\Column(nullable: true)]
+    #[Groups('movie_export')]
     private ?int $totalTime = null;
 
     #[ORM\Column(nullable: true)]
+    #[Groups('movie_export')]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(nullable: true)]
+    #[Groups('movie_export')]
     private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\OneToMany(mappedBy: 'movie', targetEntity: Source::class, cascade: ['remove', 'persist'])]
+    #[Groups('movie_export')]
+    #[MaxDepth(1)]
     private Collection $sources;
 
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'mainMovie')]
+    #[Groups('movie_export')]
+    #[MaxDepth(1)]
     private ?self $mainMovie = null;
 
     #[ORM\OneToMany(mappedBy: 'mainMovie', targetEntity: self::class, cascade: ['remove', 'persist'])]
+    #[Groups('movie_export')]
+    #[MaxDepth(1)]
     private Collection $subMovies;
 
     public function __construct()

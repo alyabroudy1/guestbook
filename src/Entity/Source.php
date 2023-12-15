@@ -5,6 +5,8 @@ namespace App\Entity;
 use App\Repository\SourceRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Annotation\MaxDepth;
 
 #[ORM\Entity(repositoryClass: SourceRepository::class)]
 class Source
@@ -12,21 +14,28 @@ class Source
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups('movie_export')]
     private ?int $id = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups('movie_export')]
     private ?string $vidoUrl = null;
 
     #[ORM\Column(type: Types::SMALLINT, nullable: true)]
+    #[Groups('movie_export')]
     private ?int $state = null;
 
     #[ORM\ManyToOne]
+    #[Groups('movie_export')]
+    #[MaxDepth(1)]
     private ?Server $server = null;
 
     #[ORM\Column(nullable: true)]
+    #[Groups('movie_export')]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(nullable: true)]
+    #[Groups('movie_export')]
     private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\ManyToOne(inversedBy: 'sources')]
