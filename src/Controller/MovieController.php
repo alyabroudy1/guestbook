@@ -10,6 +10,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mime\Encoder\EncoderInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\Encoder\JsonEncode;
@@ -54,12 +55,7 @@ class MovieController extends AbstractController
                 JsonEncode::OPTIONS => JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
             ]
         );
-dd($json);
-        return new JsonResponse([
-            'type' => 'search',
-            "title" => $query,
-            "result" => $json,
-        ]);
+        return JsonResponse::fromJsonString($json);
     }
 
     #[Route('/fetchMovie/{movie}', name: 'app_movie_fetch_movie')]
