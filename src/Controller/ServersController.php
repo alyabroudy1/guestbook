@@ -123,7 +123,6 @@ class ServersController extends AbstractController
             //todo: in new process match it with database and add it if missing
             $this->matchMovieList($result, $server);
         }
-        dd('done');
     }
 
     private function matchMovieList(array $movieList, $server)
@@ -156,7 +155,7 @@ class ServersController extends AbstractController
         //todo: optimize
         $title = $this->getCleanTitle($movie->getTitle());
         $result =  $this->entityManager->getRepository(Movie::class)->findByTitleAndState($title, $movie->getState());
-        dump('getExistingMovie result', $result);
+        //dump('getExistingMovie result', $result);
         $matchedMovie = null;
 
         if (count($result) > 0){
@@ -172,7 +171,7 @@ class ServersController extends AbstractController
         $title = $this->getCleanTitle($movie->getTitle());
         foreach ($existingMovies as $existingMovie){
             $existingTitle = $this->getCleanTitle($existingMovie->getTitle());
-            dump($title. ', '.$existingTitle, $existingTitle === $title);
+           // dump($title. ', '.$existingTitle, $existingTitle === $title);
             if ($existingTitle === $title ) {
                 return $existingMovie;
             }
@@ -182,7 +181,7 @@ class ServersController extends AbstractController
 
     private function matchMovie(Movie $movie, $server)
     {
-        dump('matchMovie', $movie->getTitle());
+       // dump('matchMovie', $movie->getTitle());
         $existingMovie = $this->getExistingMovie($movie);
 
         if ($existingMovie) {
