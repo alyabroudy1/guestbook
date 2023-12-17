@@ -123,6 +123,7 @@ class ServersController extends AbstractController
             //todo: in new process match it with database and add it if missing
             $this->matchMovieList($result, $server);
         }
+        dd('done');
     }
 
     private function matchMovieList(array $movieList, $server)
@@ -133,6 +134,7 @@ class ServersController extends AbstractController
             if ($movie->getState() === Movie::STATE_VIDEO || $movie->getState() === Movie::STATE_RESOLUTION){
                 continue;
             }
+
             $this->matchMovie($movie, $server);
         }
     }
@@ -153,29 +155,40 @@ class ServersController extends AbstractController
 //        }
         //todo: optimize
         $title = $this->getCleanTitle($movie->getTitle());
-        return $this->entityManager->getRepository(Movie::class)->findByTitleAndState($title, $movie->getState());
+        $result =  $this->entityManager->getRepository(Movie::class)->findByTitleAndState($title, $movie->getState());
+        dump('getExistingMovie result', $result);
+        $matchedMovie = null;
+
+        if (count($result) > 0){
+                /** @var Movie $matchedMovie */
+         $matchedMovie = $this->detectCorrectMatch($result, $movie);
+        }
+
+        return $matchedMovie;
     }
 
     private function detectCorrectMatch(array $existingMovies, mixed $movie)
     {
-        if (count($existingMovies) === 1) {
-            return $existingMovies[0];
-        } else {
-            //todo: try to match the right movie
-            return $existingMovies[0];
+        $title = $this->getCleanTitle($movie->getTitle());
+        foreach ($existingMovies as $existingMovie){
+            $existingTitle = $this->getCleanTitle($existingMovie->getTitle());
+            dump($title. ', '.$existingTitle, $existingTitle === $title);
+            if ($existingTitle === $title ) {
+                return $existingMovie;
+            }
         }
+        return null;
     }
 
     private function matchMovie(Movie $movie, $server)
     {
-        $existingMovies = $this->getExistingMovie($movie);
+        dump('matchMovie', $movie->getTitle());
+        $existingMovie = $this->getExistingMovie($movie);
 
-        if ($existingMovies) {
-            /** @var Movie $matchedMovie */
-            $matchedMovie = $this->detectCorrectMatch($existingMovies, $movie);
+        if ($existingMovie) {
             //todo: match other cases
             if ($movie->getState() === Movie::STATE_ITEM) {
-                $itemSources = $matchedMovie->getSources();
+                $itemSources = $existingMovie->getSources();
                 foreach ($movie->getSources() as $source) {
                     //means it's they are both in the same level
                     //check if the source exist els add it
@@ -184,10 +197,10 @@ class ServersController extends AbstractController
                             //if exist continue
                             continue;
                         }
-                        $source->setMovie($matchedMovie);
-                        $matchedMovie->addSource($source);
+                        $source->setMovie($existingMovie);
+                        $existingMovie->addSource($source);
                         $this->entityManager->persist($source);
-                        $this->entityManager->flush();
+                       // $this->entityManager->flush();
                     }
                 }
             }
@@ -218,6 +231,7 @@ class ServersController extends AbstractController
 
         // Extra spaces should be removed from the title
         $title = trim($title);
+        $title = strtolower($title);
 
         // Multiple spaces between words should be replaced with only one space
         $title = preg_replace('!\s+!', ' ', $title);

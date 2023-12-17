@@ -47,6 +47,13 @@ class MovieController extends AbstractController
     public function search($query, Request $request): JsonResponse
     {
         $movieList = $this->serversController->search($query);
+
+//        $data = [
+//            'type' => 'search',
+//            'title' => $query,
+//            'result' => $movieList,
+//        ];
+
         $json = $this->serializer->serialize(
             $movieList,
             'json',
@@ -55,6 +62,7 @@ class MovieController extends AbstractController
                 JsonEncode::OPTIONS => JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
             ]
         );
+
         return JsonResponse::fromJsonString($json);
     }
 

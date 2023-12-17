@@ -72,7 +72,7 @@ class AkwamTube implements MovieServerInterface
     }
     public function search($query): array
     {
-        $response = $this->httpClient->request('GET', 'https://i.akwam.tube/?s=sonic');
+        $response = $this->httpClient->request('GET', 'https://i.akwam.tube/?s=' . $query);
         $content = $response->getContent();
 
         // Assuming $content contains your HTML response

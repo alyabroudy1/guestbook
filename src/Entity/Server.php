@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\ServerRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: ServerRepository::class)]
 class Server
@@ -19,6 +20,7 @@ class Server
     private ?int $id = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups('movie_export')]
     private ?string $name = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
@@ -28,6 +30,7 @@ class Server
     private ?string $cookie = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups('movie_export')]
     private ?string $webAddress = null;
 
     #[ORM\Column(type: Types::SMALLINT, nullable: true)]
