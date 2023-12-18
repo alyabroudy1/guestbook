@@ -79,7 +79,7 @@ return $result;
         $queryBuilder = $this->createQueryBuilder('m');
         return $queryBuilder
             ->andWhere('m.mainMovie = :mainMovie')
-            ->setParameter('mainMovie', $movie)
+            ->setParameter('mainMovie', $movie->getId())
             ->getQuery()
             ->getResult()
             ;

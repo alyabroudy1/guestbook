@@ -32,6 +32,7 @@ class ServersController extends AbstractController
         //todo: find a way to update database movies something like fetched the last added movies once a day
        //todo:optimize search
         $movieList = $this->getMovieListFromDB($query);
+        //$movieList = [];
         if (empty($movieList)) {
             //search all server and add result to db
             $this->searchAllServers($query);
@@ -44,13 +45,19 @@ class ServersController extends AbstractController
 
     public function fetchMovie(Movie $movie): array
     {
+//        $jsonData = match ($movie->getState()){
+//            Movie::STATE_ITEM => $this->serversController->fetchMovie($movie)
+//        };
+//
+
         $movieList = $this->entityManager->getRepository(Movie::class)->findSubMovies($movie);
-        if (empty($movieList)) {
+        if (empty($movieList) && $movie->getSources()->count() > 0) {
             $source = $movie->getSources()->get(0);
             /** @var MovieServerInterface $server */
             $server = $this->servers[$source->getServer()->getName()];
             //fetch result again from db
             $movieList = $server->fetchMovie($movie);
+            dd('fetchMovie',$movieList);
             //save to data base movies with only groupOfGroup, Group, Item
             if ($movie->getState() < Movie::STATE_RESOLUTION){
                 $this->matchMovieList($movieList, $server);
@@ -59,17 +66,11 @@ class ServersController extends AbstractController
         return $movieList;
     }
 
-    public function fetchSource(Source $source): array
+    public function fetchSource(Source $source): Movie
     {
-        $resultList = [];
-        //check if movie existi in database
-        $resultMovie = $this->entityManager->getRepository(Source::class)->find($source);
-
         /** @var MovieServerInterface $server */
         $server = $this->servers[$source->getServer()->getName()];
-        //todo: cache
-        $resultList = $server->fetchSource($source);
-        return $resultList;
+        return $server->fetchSource($source);
     }
 
     private function initializeServers()

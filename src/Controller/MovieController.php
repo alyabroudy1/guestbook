@@ -54,6 +54,42 @@ class MovieController extends AbstractController
 //            'result' => $movieList,
 //        ];
 
+        $json = $this->serialize($movieList);
+
+        return JsonResponse::fromJsonString($json);
+    }
+
+    #[Route('/fetch/{id}', name: 'app_movie_fetch_source')]
+    public function fetchSource(Source $source): JsonResponse
+    {
+        //todo: check incoming movie state
+        //if available in db the next state return it or fetch it and return it
+        if ($source === null ){
+            return new JsonResponse();
+        }
+
+        $result = $this->serversController->fetchSource($source);
+
+        $json = $this->serialize([$result]);
+
+        return JsonResponse::fromJsonString($json);
+    }
+//
+//    #[Route('/fetchSource/{source}', name: 'app_movie_fetch_source')]
+//    public function fetchSource(Source $source): JsonResponse
+//    {
+//        $movieList =  $this->serversController->fetchSource($source);
+//        return $this->json([
+//            'message' => 'Welcome to fetch',
+//            'path' => 'src/Controller/MovieController.php',
+//        ]);
+//    }
+    /**
+     * @param array $movieList
+     * @return string
+     */
+    public function serialize(array $movieList): string
+    {
         $json = $this->serializer->serialize(
             $movieList,
             'json',
@@ -62,30 +98,7 @@ class MovieController extends AbstractController
                 JsonEncode::OPTIONS => JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
             ]
         );
-
-        return JsonResponse::fromJsonString($json);
-    }
-
-    #[Route('/fetchMovie/{movie}', name: 'app_movie_fetch_movie')]
-    public function fetchMovie(Movie $movie): JsonResponse
-    {
-        //todo: validate input of the movie id
-        $movieList =  $this->serversController->fetchMovie($movie);
-
-        return $this->json([
-            'message' => 'Welcome to fetch',
-            'path' => 'src/Controller/MovieController.php',
-        ]);
-    }
-
-    #[Route('/fetchSource/{source}', name: 'app_movie_fetch_source')]
-    public function fetchSource(Source $source): JsonResponse
-    {
-        $movieList =  $this->serversController->fetchSource($source);
-        return $this->json([
-            'message' => 'Welcome to fetch',
-            'path' => 'src/Controller/MovieController.php',
-        ]);
+        return $json;
     }
 
 }

@@ -163,27 +163,92 @@ class AkwamTube implements MovieServerInterface
     }
 
 
-    public function fetchMovie(Movie $movie): array
+    public function fetchMovie(Movie $movie): Movie
     {
         dump('akwam fetchMovie:', $movie);
-        $mainMovie1 = new Movie();
-        $mainMovie1->setTitle("ratched sub1");
-        $mainMovie1->setState(Movie::STATE_GROUP);
-
-        $source1 = new Source();
-        $source1->setState(Movie::STATE_GROUP);
-        $source1->setServer($this->serverConfig);
-        $source1->setVidoUrl("ratcheds1s1");
-        $mainMovie1->addSource($source1);
-
-        $movie->addSubMovie($mainMovie1);
-
-        return [$mainMovie1];
+                return match ($movie->getState()){
+            Movie::STATE_ITEM => $this->fetchItem($movie)
+        };
+//        $mainMovie1 = new Movie();
+//        $mainMovie1->setTitle("ratched sub1");
+//        $mainMovie1->setState(Movie::STATE_GROUP);
+//
+//        $source1 = new Source();
+//        $source1->setState(Movie::STATE_GROUP);
+//        $source1->setServer($this->serverConfig);
+//        $source1->setVidoUrl("ratcheds1s1");
+//        $mainMovie1->addSource($source1);
+//
+//        $movie->addSubMovie($mainMovie1);
+//
+//        return [$mainMovie1];
         // TODO: Implement fetchMovie() method.
     }
 
-    public function fetchSource(Source $source): array
+    public function fetchItem(Movie $movie): Movie
     {
         // TODO: Implement fetchSource() method.
+
     }
+    public function fetchSource(Source $source): Movie
+    {
+        $url = $this->serverConfig->getWebAddress() . $source->getVidoUrl();
+
+        $response = $this->httpClient->request('GET', $url);
+        $content = $response->getContent();
+
+        // Assuming $content contains your HTML response
+        $crawler = new Crawler($content);
+
+        $videoGridElements = $crawler->filter('#play-video');
+        $mainMovie = $source->getMovie();
+        $mov = $mainMovie->cloneMovie();
+        if ($videoGridElements->count() > 0) {
+            $href = $videoGridElements->attr('href');
+            if ($href !== null){
+                $href = str_replace('rand&', '', $href);
+                if (str_starts_with($href, '/')){
+                    $href = 'https:' . $href;
+                }
+                $response = $this->httpClient->request('GET', $href, [
+                    'headers' => [
+                        'referer' => $url
+                    ]
+                ]);
+                $content2 = $response->getContent();
+                $crawler2 = new Crawler($content2);
+                $elements = $crawler2->filter('.embeding ul li a')->each(function (Crawler $node) {
+                    return [
+                        'url' => $node->attr('data-src'),
+                        'title' => $node->text()
+                    ];
+                });
+
+                $mov->setMainMovie($mainMovie);
+                $mov->setState(Movie::STATE_BROWSE);
+                foreach ($elements as $linkArray){
+                    $source = new Source();
+                    $source->setMovie($mov);
+                    $source->setServer($this->serverConfig);
+                    $source->setState(Movie::STATE_BROWSE);
+                    $referer = $this->extractDomainfromUrl($href) . '/';
+                    $finalUrl = $linkArray['url'] . Movie::URL_DELIMITER .'referer='.$referer;
+                    $source->setVidoUrl($finalUrl);
+                    $mov->addSource($source);
+                }
+
+            }
+        }
+        return $mov;
+    }
+
+    function extractDomainfromUrl($videoUrl) {
+        if (preg_match('~(https?://[^/]+)(/.*)~', $videoUrl, $matches)) {
+            if (count($matches) > 1) {
+                $videoUrl = $matches[1];
+            }
+        }
+        return $videoUrl;
+    }
+
 }

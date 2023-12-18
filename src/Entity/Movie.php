@@ -18,6 +18,10 @@ class Movie
     public final const STATE_ITEM = 2;
     public final const STATE_RESOLUTION = 3;
     public final const STATE_VIDEO = 4;
+    public final const STATE_BROWSE = 5;
+    public final const STATE_RESULT= 6;
+    public final const STATE_COOKIE = 7;
+    public final const URL_DELIMITER = '||';
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -69,14 +73,14 @@ class Movie
     #[MaxDepth(1)]
     private Collection $sources;
 
-    #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'mainMovie')]
+    #[ORM\ManyToOne(targetEntity: Movie::class, inversedBy: 'subMovies')]
     #[Groups('movie_export')]
     #[MaxDepth(1)]
     private ?self $mainMovie = null;
 
-    #[ORM\OneToMany(mappedBy: 'mainMovie', targetEntity: self::class, cascade: ['remove', 'persist'])]
+    #[ORM\OneToMany(mappedBy: 'mainMovie', targetEntity: Movie::class, cascade: ['remove', 'persist'])]
     #[Groups('movie_export')]
-    #[MaxDepth(1)]
+    #[MaxDepth(2)]
     private Collection $subMovies;
 
     public function __construct()
@@ -283,4 +287,45 @@ class Movie
 
         return $this;
     }
+
+    public function cloneMovie($withSource = false, $withSubMovie = false): self
+    {
+        $clone = new self();
+
+        $clone->title = $this->title;
+        $clone->description = $this->description;
+        $clone->state = $this->state;
+        $clone->cardImage = $this->cardImage;
+        $clone->backgroundImage = $this->backgroundImage;
+        $clone->rate = $this->rate;
+        $clone->playedTime = $this->playedTime;
+        $clone->totalTime = $this->totalTime;
+        $clone->createdAt = $this->createdAt; // You might want to set this to the current time
+        $clone->updatedAt = $this->updatedAt; // You might want to set this to the current time
+
+        // For the collections, you'll need to clone each item
+        if ($withSource){
+            foreach ($this->sources as $source) {
+                $cloneSource = clone $source;
+                $clone->sources->add($cloneSource);
+                $cloneSource->setMovie($clone);
+            }
+        }
+
+        // If mainMovie is not null, clone it
+        if ($this->mainMovie !== null) {
+            $clone->mainMovie = clone $this->mainMovie;
+        }
+
+        // For the subMovies collection, you'll need to clone each item
+        if ($withSubMovie) {
+            foreach ($this->subMovies as $subMovie) {
+                $cloneSubMovie = clone $subMovie;
+                $clone->subMovies->add($cloneSubMovie);
+                $cloneSubMovie->setMainMovie($clone);
+            }
+        }
+        return $clone;
+    }
+
 }
