@@ -7,6 +7,7 @@ use App\Entity\MovieSource;
 use App\Entity\Server;
 use App\Entity\Source;
 use Symfony\Component\DomCrawler\Crawler;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -72,7 +73,7 @@ class MyCima implements MovieServerInterface
     }
 
 
-    public function search(string $query): array
+    public function search(string $query, Request $request): array
     {
         $movieList = [];
         // Log the query

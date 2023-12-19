@@ -31,6 +31,9 @@ use Symfony\Component\Serializer\SerializerInterface;
 #[Route('/movie')]
 class MovieController extends AbstractController
 {
+    public const FETCH_PATH = 'fetch';
+    public const MOVIE_PATH = 'movie';
+
     public function __construct(
         private ServersController $serversController,
         private SerializerInterface $serializer
@@ -46,7 +49,7 @@ class MovieController extends AbstractController
     #[Route('/search/{query}', name: 'app_movie_search')]
     public function search($query, Request $request): JsonResponse
     {
-        $movieList = $this->serversController->search($query);
+        $movieList = $this->serversController->search($query, $request);
 
 //        $data = [
 //            'type' => 'search',

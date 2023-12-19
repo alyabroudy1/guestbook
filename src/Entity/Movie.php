@@ -83,6 +83,10 @@ class Movie
     #[MaxDepth(2)]
     private Collection $subMovies;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups('movie_export')]
+    private ?string $videoUrl = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -326,6 +330,18 @@ class Movie
             }
         }
         return $clone;
+    }
+
+    public function getVideoUrl(): ?string
+    {
+        return $this->videoUrl;
+    }
+
+    public function setVideoUrl(?string $videoUrl): static
+    {
+        $this->videoUrl = $videoUrl;
+
+        return $this;
     }
 
 }

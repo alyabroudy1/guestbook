@@ -13,6 +13,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use http\Header\Parser;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -25,7 +26,7 @@ class ServersController extends AbstractController
         $this->initializeServers();
     }
 
-    public function search($query): array
+    public function search($query, Request $request): array
     {
         //get search result from servers
         //todo: try to get the result from database first and if theres no result then fetch it from the net
@@ -35,7 +36,7 @@ class ServersController extends AbstractController
         //$movieList = [];
         if (empty($movieList)) {
             //search all server and add result to db
-            $this->searchAllServers($query);
+            $this->searchAllServers($query, $request);
             //fetch result again from db
             $movieList = $this->getMovieListFromDB($query);
         }
@@ -115,12 +116,12 @@ class ServersController extends AbstractController
         return $this->entityManager->getRepository(Movie::class)->findMainMoviesByTitleLoose($query);
     }
 
-    private function searchAllServers($query)
+    private function searchAllServers($query, Request $request)
     {
         //todo: doing it using thread or workers for performance
         /** @var MovieServerInterface $server */
         foreach ($this->servers as $server) {
-            $result = $server->search($query);
+            $result = $server->search($query, $request);
             //todo: in new process match it with database and add it if missing
             $this->matchMovieList($result, $server);
         }
@@ -227,7 +228,7 @@ class ServersController extends AbstractController
         $title = str_ireplace($replace, '', $title);
 
         // Replace 4 digit numbers
-        $title = preg_replace('/\b\d{4}\b/', '', $title);
+        //$title = preg_replace('/\b\d{4}\b/', '', $title);
 
         // Extra spaces should be removed from the title
         $title = trim($title);

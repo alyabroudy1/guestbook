@@ -2,12 +2,14 @@
 
 namespace App\servers;
 
+use App\Controller\MovieController;
 use App\Entity\Movie;
 use App\Entity\MovieSource;
 use App\Entity\Server;
 use App\Entity\Source;
 use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\DomCrawler\Crawler;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class AkwamTube implements MovieServerInterface
@@ -70,8 +72,9 @@ class AkwamTube implements MovieServerInterface
 
         return $movieList;
     }
-    public function search($query): array
+    public function search($query, Request $request): array
     {
+
         $response = $this->httpClient->request('GET', 'https://i.akwam.tube/?s=' . $query);
         $content = $response->getContent();
 
@@ -84,8 +87,10 @@ class AkwamTube implements MovieServerInterface
 // Initialize an array to store the extracted data
         $movieList = [];
 
+        $fetchPath = $request->getSchemeAndHttpHost() . '/' . MovieController::MOVIE_PATH . '/' .MovieController::FETCH_PATH;
+
 // Loop through each <li> element
-        $videoGridElements->each(function (Crawler $videoGrid) use (&$movieList) {
+        $videoGridElements->each(function (Crawler $videoGrid) use (&$movieList, $fetchPath) {
             // Extract data from each <li> element
             $videoElement= $videoGrid->filter('div.thumb a');
             $videoUrl = $videoElement->attr('href');
@@ -112,11 +117,13 @@ class AkwamTube implements MovieServerInterface
             $movie->setCardImage($cardImage);
             $movie->setBackgroundImage($cardImage);
             $movie->setState($state);
+            $movie->setVideoUrl($fetchPath);
 
             $source = new Source();
             $source->setServer($this->serverConfig);
             $source->setVidoUrl($videoUrl);
             $source->setState($state);
+            $source->setTitle($title);
 
             $movie->addSource($source);
 

@@ -41,6 +41,10 @@ class Source
     #[ORM\ManyToOne(inversedBy: 'sources')]
     private ?Movie $movie = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups('movie_export')]
+    private ?string $title = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -120,6 +124,18 @@ class Source
     public function setMovie(?Movie $movie): static
     {
         $this->movie = $movie;
+
+        return $this;
+    }
+
+    public function getTitle(): ?string
+    {
+        return $this->title;
+    }
+
+    public function setTitle(?string $title): static
+    {
+        $this->title = $title;
 
         return $this;
     }
