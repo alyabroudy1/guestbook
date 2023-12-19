@@ -238,6 +238,7 @@ class AkwamTube implements MovieServerInterface
                     $source->setMovie($mov);
                     $source->setServer($this->serverConfig);
                     $source->setState(Movie::STATE_BROWSE);
+                    $source->setTitle($linkArray['title']);
                     $referer = $this->extractDomainfromUrl($href) . '/';
                     $finalUrl = $linkArray['url'] . Movie::URL_DELIMITER .'referer='.$referer;
                     $source->setVidoUrl($finalUrl);
