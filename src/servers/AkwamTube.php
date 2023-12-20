@@ -72,10 +72,10 @@ class AkwamTube implements MovieServerInterface
 
         return $movieList;
     }
-    public function search($query, Request $request): array
+    public function search($query): array
     {
-
-        $response = $this->httpClient->request('GET', 'https://i.akwam.tube/?s=' . $query);
+        $webAddress= $this->serverConfig->getWebAddress();
+        $response = $this->httpClient->request('GET', $webAddress . '/?s=' . $query);
         $content = $response->getContent();
 
         // Assuming $content contains your HTML response
@@ -87,10 +87,8 @@ class AkwamTube implements MovieServerInterface
 // Initialize an array to store the extracted data
         $movieList = [];
 
-        $fetchPath = $request->getSchemeAndHttpHost() . '/' . MovieController::MOVIE_PATH . '/' .MovieController::FETCH_PATH;
-
 // Loop through each <li> element
-        $videoGridElements->each(function (Crawler $videoGrid) use (&$movieList, $fetchPath) {
+        $videoGridElements->each(function (Crawler $videoGrid) use (&$movieList) {
             // Extract data from each <li> element
             $videoElement= $videoGrid->filter('div.thumb a');
             $videoUrl = $videoElement->attr('href');
@@ -117,7 +115,6 @@ class AkwamTube implements MovieServerInterface
             $movie->setCardImage($cardImage);
             $movie->setBackgroundImage($cardImage);
             $movie->setState($state);
-            $movie->setVideoUrl($fetchPath);
 
             $source = new Source();
             $source->setServer($this->serverConfig);
@@ -203,6 +200,7 @@ class AkwamTube implements MovieServerInterface
 
         $response = $this->httpClient->request('GET', $url);
         $content = $response->getContent();
+        $realUrl = $response->getInfo('url');
 
         // Assuming $content contains your HTML response
         $crawler = new Crawler($content);
@@ -239,7 +237,7 @@ class AkwamTube implements MovieServerInterface
                     $source->setServer($this->serverConfig);
                     $source->setState(Movie::STATE_BROWSE);
                     $source->setTitle($linkArray['title']);
-                    $referer = $this->extractDomainfromUrl($href) . '/';
+                    $referer = $this->extractDomainfromUrl($realUrl) . '/';
                     $finalUrl = $linkArray['url'] . Movie::URL_DELIMITER .'referer='.$referer;
                     $source->setVidoUrl($finalUrl);
                     $mov->addSource($source);
@@ -247,6 +245,7 @@ class AkwamTube implements MovieServerInterface
 
             }
         }
+        //todo update server webaddress in db from $realUrl
         return $mov;
     }
 
@@ -259,4 +258,13 @@ class AkwamTube implements MovieServerInterface
         return $videoUrl;
     }
 
+    public function fetchGroupOfGroup(Source $source)
+    {
+        // TODO: Implement fetchGroupOfGroup() method.
+    }
+
+    public function fetchGroup(Source $source)
+    {
+        // TODO: Implement fetchGroup() method.
+    }
 }

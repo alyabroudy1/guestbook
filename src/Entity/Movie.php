@@ -74,18 +74,19 @@ class Movie
     private Collection $sources;
 
     #[ORM\ManyToOne(targetEntity: Movie::class, inversedBy: 'subMovies')]
-    #[Groups('movie_export')]
-    #[MaxDepth(1)]
     private ?self $mainMovie = null;
 
     #[ORM\OneToMany(mappedBy: 'mainMovie', targetEntity: Movie::class, cascade: ['remove', 'persist'])]
     #[Groups('movie_export')]
-    #[MaxDepth(2)]
+    #[MaxDepth(1)]
     private Collection $subMovies;
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups('movie_export')]
     private ?string $videoUrl = null;
+
+    #[ORM\ManyToMany(targetEntity: Category::class)]
+    private Collection $categories;
 
     public function __construct()
     {
@@ -93,6 +94,7 @@ class Movie
         $this->updatedAt = new \DateTimeImmutable();
         $this->sources = new ArrayCollection();
         $this->subMovies = new ArrayCollection();
+        $this->categories = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -340,6 +342,30 @@ class Movie
     public function setVideoUrl(?string $videoUrl): static
     {
         $this->videoUrl = $videoUrl;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Category>
+     */
+    public function getCategories(): Collection
+    {
+        return $this->categories;
+    }
+
+    public function addCategory(Category $category): static
+    {
+        if (!$this->categories->contains($category)) {
+            $this->categories->add($category);
+        }
+
+        return $this;
+    }
+
+    public function removeCategory(Category $category): static
+    {
+        $this->categories->removeElement($category);
 
         return $this;
     }

@@ -10,6 +10,7 @@ use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Contracts\HttpClient\ResponseInterface;
 
 class MyCima implements MovieServerInterface
 {
@@ -73,7 +74,7 @@ class MyCima implements MovieServerInterface
     }
 
 
-    public function search(string $query, Request $request): array
+    public function search(string $query): array
     {
         $movieList = [];
         // Log the query
@@ -82,7 +83,6 @@ class MyCima implements MovieServerInterface
 
         $searchContext = $query;
         $multiSearch = false;
-
         if (!str_contains($query, "http")) {
 //            if (isset($referer) && !empty($referer)) {
 //                $query = rtrim($referer, '/') . "/search/" . $query;
@@ -94,8 +94,300 @@ class MyCima implements MovieServerInterface
 
         }
 
+
+        $movieList = $this->getMovieList($query);
+        $query2 = $query . '/list/';
+        $movieList2 = $this->getMovieList($query2);
+        // Once all is done just return the $movieList
+        return array_merge($movieList, $movieList2);
+    }
+
+    public function isSeries($title, $videoUrl): bool
+    {
+        $u = $videoUrl;
+        $n = $title;
+
+        // $this->logger->debug("isSeries: title: $n , url= $u");
+
+        return str_contains($n, "انمي") || str_contains($n, "برنامج") || str_contains($n, "مسلسل") || str_contains($u, "series");
+    }
+
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function setId(?int $id): void
+    {
+        $this->id = $id;
+    }
+
+    private function init()
+    {
+        //todo: set cookie, headers and other stuff
+        //$this->serverConfig->setName('Akwam'); // fetch id from serverConfig
+    }
+
+    public function getServerConfig(): Server
+    {
+        return $this->serverConfig;
+    }
+
+    public function setServerConfig(Server $serverConfig): void
+    {
+        $this->serverConfig = $serverConfig;
+    }
+
+    public function fetchSource(Source $source): Movie
+    {
+        // $movieUrl = $source->getServer()->getWebAddress() . $source->getVidoUrl();
+        return match ($source->getState()) {
+            Movie::STATE_GROUP_OF_GROUP => $this->fetchGroupOfGroup($source),
+            Movie::STATE_ITEM => $this->fetchItem($source)
+        };
+    }
+
+    public function fetchItem(Source $source): Movie
+    {
+        $movieUrl = $source->getServer()->getWebAddress() . $source->getVidoUrl();
+        $mainMovie = $source->getMovie();
+        $movie = $mainMovie->cloneMovie();
+        $movie->setMainMovie($mainMovie);
+        try {
+            $response = $this->httpClient->request('GET', $movieUrl, [
+            ]);
+            $realUrl = $response->getInfo('url');
+
+            $content = $response->getContent();
+            $crawler = new Crawler($content);
+
+            $descElem = $crawler->filter('.StoryMovieContent')->first();
+            $desc = "";
+            if ($descElem->count() > 0) {
+                $desc = $descElem->text();
+                $movie->setDescription($desc);
+            }
+
+            $videoUrlTested = false;
+
+            //$uls = $crawler->filter('.List--Download--Wecima--Single');
+            $uls = $crawler->filterXPath('//ul[contains(@class, "List--Download--Wecima--Single")]');
+            $uls->each(function (Crawler $ul) use ($realUrl, &$movie, &$videoUrlTested) {
+                $lis = $ul->filter('li');
+
+                $lis->each(function (Crawler $li) use ($realUrl, &$movie, &$videoUrlTested) {
+                    $videoUrlElement = $li->filter('[href]')->first();
+                    if ($videoUrlElement !== null) {
+                        $videoUrl = $videoUrlElement->attr('href');
+                        $title = $movie->getTitle();
+                        $titleElement = $li->filter('resolution')->first();
+                        if ($titleElement !== null) {
+                            $title = $titleElement->text();
+                        }
+
+//                        if (!$this->isValidVideoUrl($videoUrl)){
+//                                return;
+//                        }
+
+                        $state = Movie::STATE_VIDEO;
+
+                        $source = new Source();
+                        $source->setTitle($title);
+                        $source->setServer($this->serverConfig);
+                        $source->setVidoUrl($videoUrl);
+                        $source->setState($state);
+
+                        $movie->addSource($source);
+
+                    }
+                });
+            });
+
+            $uls = $crawler->filter('.WatchServersList');
+            $uls->each(function (Crawler $ul) use ($realUrl, &$movie) {
+                $lis = $ul->filter('[data-url]');
+                $lis->each(function (Crawler $li) use ($realUrl, &$movie) {
+                    $videoUrl = $li->attr('data-url');
+
+                    $title = $movie->getTitle();
+                    $titleElement = $li->filter('strong')->first();
+                    if ($titleElement !== null) {
+                        $title = $titleElement->text();
+                    }
+                    $state = Movie::STATE_BROWSE;
+
+                    $source = new Source();
+                    $source->setServer($this->serverConfig);
+
+                    $referer = $this->extractDomainfromUrl($realUrl) . '/';
+                    $finalUrl = $videoUrl . Movie::URL_DELIMITER .'referer='.$referer;
+
+                    $source->setVidoUrl($finalUrl);
+                    $source->setTitle($title);
+                    $source->setState($state);
+
+                    $movie->addSource($source);
+                });
+            });
+        } catch (\Exception $e) {
+            echo "Our PHP adventure continues, but there might be some bumps in the road!\n";
+        }
+        //todo update server webaddress in db from $realUrl
+        return $movie;
+    }
+
+    function extractDomainfromUrl($videoUrl) {
+        if (preg_match('~(https?://[^/]+)(/.*)~', $videoUrl, $matches)) {
+            if (count($matches) > 1) {
+                $videoUrl = $matches[1];
+            }
+        }
+        return $videoUrl;
+    }
+
+    public function fetchGroupOfGroup(Source $source): Movie
+    {
+        $movieUrl = $source->getServer()->getWebAddress() . $source->getVidoUrl();
+        $mainMovie = $source->getMovie();
+
+        try {
+            $response = $this->httpClient->request('GET', $movieUrl, [
+                'headers' => [
+                    'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+                    'User-Agent' => 'Mozilla/5.0 (Linux; Android 8.1.0; Android SDK built for x86 Build/OSM1.180201.031; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/69.0.3497.100 Mobile Safari/537.36',
+                ]
+            ]);
+
+            $content = $response->getContent();
+            $crawler = new Crawler($content);
+
+            $descElem = $crawler->filter('.PostItemContent')->first();
+
+            if (count($descElem) > 0) {
+                $desc = $descElem->text();
+                $mainMovie->setDescription($desc);
+            }
+
+            $boxs = $crawler->filter('.List--Seasons--Episodes');
+
+//            if (count($boxs) === 0) {
+//                $boxs = $crawler->filter('.Episodes--Seasons--Episodes');
+//            }
+
+
+            if (count($boxs) === 0) {
+                $source->setState(Movie::STATE_GROUP);
+                return $this->fetchGroup($source);
+                // You can call your fetchGroup function here.
+            } else {
+                $boxs->each(function (Crawler $box) use (&$mainMovie) {
+                    $lis = $box->filter('a');
+                    $lis->each(function (Crawler $li) use (&$mainMovie) {
+                        $title = $li->text();
+                        $videoUrl = $li->attr('href');
+
+                        $state = Movie::STATE_GROUP;
+
+                        if (preg_match('~(https?://[^/]+)(/.*)~', $videoUrl, $matches)) {
+                            if (count($matches) > 1) {
+                                $videoUrl = $matches[2];
+                            }
+                        }
+
+                        $season = $mainMovie->cloneMovie();
+                        $season->setMainMovie($mainMovie);
+                        $season->setTitle($title);
+                        $season->setState($state);
+
+                        $source = new Source();
+                        $source->setServer($this->serverConfig);
+                        $source->setVidoUrl($videoUrl);
+                        $source->setState($state);
+                        $source->setTitle($title);
+                        $season->addSource($source);
+
+                        $mainMovie->addSubMovie($season);
+                    });
+                });
+            }
+        } catch (\Exception $e) {
+            dd('error:mycima fetchGroupOfGroup: ' . $e->getMessage());
+        }
+        return $mainMovie;
+    }
+
+    public function fetchGroup(Source $source)
+    {
+        $movieUrl = $source->getServer()->getWebAddress() . $source->getVidoUrl();
+        $mainMovie = $source->getMovie();
+        try {
+            $response = $this->httpClient->request('GET', $movieUrl, [
+            ]);
+
+            $content = $response->getContent();
+            $crawler = new Crawler($content);
+
+            $descElem = $crawler->filter('.PostItemContent')->first();
+
+            if ($descElem->count() > 0) {
+                $desc = $descElem->text();
+                $mainMovie->setDescription($desc);
+            }
+
+            $boxs = $crawler->filter('.Episodes--Seasons--Episodes');
+            $boxs->each(function (Crawler $box) use (&$mainMovie) {
+                $lis = $box->filter('a');
+
+                $lis->each(function (Crawler $li) use (&$mainMovie) {
+                    $title = $li->text();
+                    $videoUrl = $li->attr('href');
+
+                    $state = Movie::STATE_ITEM;
+
+
+                    if (preg_match('~(https?://[^/]+)(/.*)~', $videoUrl, $matches)) {
+                        if (count($matches) > 1) {
+                            $videoUrl = $matches[2];
+                        }
+                    }
+
+                    $episode = $mainMovie->cloneMovie();
+                    $episode->setMainMovie($mainMovie);
+                    $episode->setTitle($title);
+                    $episode->setState($state);
+
+                    $source = new Source();
+                    $source->setServer($this->serverConfig);
+                    $source->setVidoUrl($videoUrl);
+                    $source->setState($state);
+                    $source->setTitle($title);
+
+                    $episode->addSource($source);
+
+                    $mainMovie->addSubMovie($episode);
+                });
+            });
+        } catch (\Exception $e) {
+            echo "Our PHP adventure continues, but there might be some bumps in the road!\n";
+        }
+        return $mainMovie;
+    }
+
+    /**
+     * @param \Symfony\Contracts\HttpClient\ResponseInterface $response
+     * @param array $movieList
+     * @param string $query
+     * @return array
+     * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
+     */
+    public function getMovieList(string $query): array
+    {
+        $movieList = [];
         $response = $this->httpClient->request('GET', $query);
-        if ($response->getStatusCode() === Response::HTTP_OK){
+        if ($response->getStatusCode() === Response::HTTP_OK) {
 
             $html = $response->getContent();
             $crawler = new Crawler($html);
@@ -153,320 +445,13 @@ class MyCima implements MovieServerInterface
                     $source->setServer($this->serverConfig);
                     $source->setVidoUrl($videoUrl);
                     $source->setState($state);
+                    $source->setTitle($title);
 
                     $movie->addSource($source);
 
                     $movieList[] = $movie;
                 }
             });
-        }
-        // Once all is done just return the $movieList
-        return $movieList;
-    }
-
-    public function isSeries($title, $videoUrl): bool
-    {
-        $u = $videoUrl;
-        $n = $title;
-
-        // $this->logger->debug("isSeries: title: $n , url= $u");
-
-        return str_contains($n, "انمي") || str_contains($n, "برنامج") || str_contains($n, "مسلسل") || str_contains($u, "series");
-    }
-
-    public function getId(): ?int
-    {
-        return $this->id;
-    }
-
-    public function setId(?int $id): void
-    {
-        $this->id = $id;
-    }
-
-    private function init()
-    {
-        //todo: set cookie, headers and other stuff
-        //$this->serverConfig->setName('Akwam'); // fetch id from serverConfig
-    }
-
-    public function getServerConfig(): Server
-    {
-        return $this->serverConfig;
-    }
-
-    public function setServerConfig(Server $serverConfig): void
-    {
-        $this->serverConfig = $serverConfig;
-    }
-
-
-    public function fetchMovie(Movie $movie): array
-    {
-        // TODO: Implement fetchMovie() method.
-        dump('mycima fetchMovie: '. $movie->getState());
-        switch ($movie->getState()) {
-            case Movie::STATE_GROUP_OF_GROUP:
-                return $this->fetchGroupOfGroup($movie);
-            case Movie::STATE_GROUP:
-                return $this->fetchGroup($movie);
-            case Movie::STATE_ITEM:
-                return $this->fetchItem($movie);
-        }
-        return [];
-    }
-
-    public function fetchSource(Source $source): array
-    {
-        $movieUrl = $source->getServer()->getWebAddress() . $source->getVidoUrl();
-        return [];
-        }
-
-        public function fetchItem(Movie $movie): array
-    {
-        $source = $movie->getSources()->get(0);
-        $movieUrl = $source->getServer()->getWebAddress() . $source->getVidoUrl();
-        dump('fetchItem ' . $movieUrl);
-        try {
-            $response = $this->httpClient->request('GET', $movieUrl, [
-            ]);
-
-            $content = $response->getContent();
-            $crawler = new Crawler($content);
-
-            $descElem = $crawler->filter('.StoryMovieContent')->first();
-            $desc = "";
-            if ($descElem->count() > 0) {
-                $desc = $descElem->text();
-                $movie->setDescription($desc);
-            }
-
-            $videoUrlTested = false;
-
-            //$uls = $crawler->filter('.List--Download--Wecima--Single');
-            $uls = $crawler->filterXPath('//ul[contains(@class, "List--Download--Wecima--Single")]');
-            $movieList = [];
-            $uls->each(function (Crawler $ul) use (&$movieList, &$movie, &$videoUrlTested) {
-                $lis = $ul->filter('li');
-                dump('$lis' . $lis->count());
-                $lis->each(function (Crawler $li) use (&$movieList, &$movie, &$videoUrlTested) {
-                    $videoUrlElement = $li->filter('[href]')->first();
-                    if ($videoUrlElement !== null) {
-                        $videoUrl = $videoUrlElement->attr('href');
-                        $title = $movie->getTitle();
-                        $titleElement = $li->filter('resolution')->first();
-                        if ($titleElement !== null) {
-                            $title = $titleElement->text();
-                        }
-
-//                        if (!$this->isValidVideoUrl($videoUrl)){
-//                                return;
-//                        }
-
-                        $state = Movie::STATE_VIDEO;
-                        $video = new Movie();  // Instance of your Movie class containing methods like setTitle, setVideoUrl, etc.
-                        $video->setTitle($title);
-                        $video->setCardImage($movie->getCardImage());
-                        $video->setBackgroundImage($movie->getCardImage());
-                        $video->setState($state);
-                        $video->setDescription($movie->getDescription());
-
-                        $source = new Source();
-                        $source->setServer($this->serverConfig);
-                        $source->setVidoUrl($videoUrl);
-                        $source->setState($state);
-
-                        $video->addSource($source);
-
-                        $movie->addSubMovie($video);
-
-                        $movieList[] = $video;
-                    }
-                });
-            });
-
-
-//fetch watch servers
-                $uls = $crawler->filter('.WatchServersList');
-                $uls->each(function (Crawler $ul) use (&$movieList, &$movie) {
-                    $lis = $ul->filter('[data-url]');
-                    dump('$lis' . $lis->count());
-                    $lis->each(function (Crawler $li) use (&$movieList, &$movie) {
-                            $videoUrl = $li->attr('data-url');
-
-                        $title = $movie->getTitle();
-                            $titleElement = $li->filter('strong')->first();
-                            if ($titleElement !== null) {
-                                $title = $titleElement->text();
-                            }
-                            $state = Movie::STATE_RESOLUTION;
-                            $video = new Movie();  // Instance of your Movie class containing methods like setTitle, setVideoUrl, etc.
-                            $video->setTitle($title);
-                            $video->setCardImage($movie->getCardImage());
-                            $video->setBackgroundImage($movie->getCardImage());
-                            $video->setState($state);
-                            $video->setDescription($movie->getDescription());
-
-                            $source = new Source();
-                            $source->setServer($this->serverConfig);
-                            $source->setVidoUrl($videoUrl);
-                            $source->setState($state);
-
-                            $video->addSource($source);
-
-                            $movie->addSubMovie($video);
-
-                            $movieList[] = $video;
-                    });
-                });
-        } catch (\Exception $e) {
-            echo "Our PHP adventure continues, but there might be some bumps in the road!\n";
-        }
-        return $movieList;
-    }
-
-    private function fetchGroupOfGroup(Movie $movie)
-    {
-
-        $movieList = [];
-        $source = $movie->getSources()->get(0);
-        $movieUrl = $source->getServer()->getWebAddress() . $source->getVidoUrl();
-        dump('fetchGroupOfGroup', $movieUrl);
-
-        try {
-            $response = $this->httpClient->request('GET', $movieUrl, [
-                'headers' => [
-                    'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-                    'User-Agent' => 'Mozilla/5.0 (Linux; Android 8.1.0; Android SDK built for x86 Build/OSM1.180201.031; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/69.0.3497.100 Mobile Safari/537.36',
-                ]
-            ]);
-
-            $content = $response->getContent();
-            $crawler = new Crawler($content);
-
-            $descElem = $crawler->filter('.PostItemContent')->first();
-            $desc = "";
-
-            if (count($descElem) > 0) {
-                $desc = $descElem->text();
-                $movie->setDescription($desc);
-            }
-
-            $boxs = $crawler->filter('.List--Seasons--Episodes');
-
-//            if (count($boxs) === 0) {
-//                $boxs = $crawler->filter('.Episodes--Seasons--Episodes');
-//            }
-
-            if (count($boxs) === 0) {
-                $movie->setState(Movie::STATE_GROUP);
-                dump('boxes are 0 so fetchGroup');
-                return $this->fetchGroup($movie);
-                // You can call your fetchGroup function here.
-            } else {
-                $boxs->each(function (Crawler $box) use (&$movieList, $movie) {
-                    $lis = $box->filter('a');
-                    dump('$lis' . $lis->count());
-                    $lis->each(function (Crawler $li) use (&$movieList, $movie) {
-                        $title = $li->text();
-                        $videoUrl = $li->attr('href');
-                        $cardImageUrl = $movie->getCardImage();
-                        $backgroundImageUrl = $cardImageUrl;
-                        $state = Movie::STATE_GROUP;
-
-                        if (preg_match('~(https?://[^/]+)(/.*)~', $videoUrl, $matches)) {
-                            if (count($matches) > 1) {
-                                $videoUrl = $matches[2];
-                            }
-                        }
-
-                        $season = new Movie();  // Instance of your Movie class containing methods like setTitle, setVideoUrl, etc.
-                        $season->setTitle($title);
-                        $season->setCardImage($cardImageUrl);
-                        $season->setBackgroundImage($backgroundImageUrl);
-                        $season->setState($state);
-                        $season->setDescription($movie->getDescription());
-
-                        $source = new Source();
-                        $source->setServer($this->serverConfig);
-                        $source->setVidoUrl($videoUrl);
-                        $source->setState($state);
-
-                        $season->addSource($source);
-
-                        $movie->addSubMovie($season);
-
-                        $movieList[] = $season;
-
-                    });
-                });
-            }
-        } catch (\Exception $e) {
-            dd('error:mycima fetchGroupOfGroup: ' . $e->getMessage());
-        }
-        return $movieList;
-    }
-
-    private function fetchGroup(Movie $movie)
-    {
-
-        $source = $movie->getSources()->get(0);
-        $movieUrl = $source->getServer()->getWebAddress() . $source->getVidoUrl();
-        dump('mycima fetchGroup:' . $movieUrl);
-        try {
-            $response = $this->httpClient->request('GET', $movieUrl, [
-            ]);
-
-            $content = $response->getContent();
-            $crawler = new Crawler($content);
-
-            $descElem = $crawler->filter('.PostItemContent')->first();
-            $desc = "";
-
-            if ($descElem->count() > 0) {
-                $desc = $descElem->text();
-                $movie->setDescription($desc);
-            }
-
-            $boxs = $crawler->filter('.Episodes--Seasons--Episodes');
-            $movieList = [];
-            $boxs->each(function (Crawler $box) use (&$movieList, $movie) {
-                $lis = $box->filter('a');
-                dump('$lis' . $lis->count());
-                $lis->each(function (Crawler $li) use (&$movieList, $movie) {
-                    $title = $li->text();
-                    $videoUrl = $li->attr('href');
-
-                    $state = Movie::STATE_ITEM;
-
-
-                    if (preg_match('~(https?://[^/]+)(/.*)~', $videoUrl, $matches)) {
-                        if (count($matches) > 1) {
-                            $videoUrl = $matches[2];
-                        }
-                    }
-
-                    $episode = new Movie();  // Instance of your Movie class containing methods like setTitle, setVideoUrl, etc.
-                    $episode->setTitle($title);
-                    $episode->setCardImage($movie->getCardImage());
-                    $episode->setBackgroundImage($movie->getCardImage());
-                    $episode->setState($state);
-                    $episode->setDescription($movie->getDescription());
-
-                    $source = new Source();
-                    $source->setServer($this->serverConfig);
-                    $source->setVidoUrl($videoUrl);
-                    $source->setState($state);
-
-                    $episode->addSource($source);
-
-                    $movie->addSubMovie($episode);
-
-                    $movieList[] = $episode;
-                });
-            });
-        } catch (\Exception $e) {
-            echo "Our PHP adventure continues, but there might be some bumps in the road!\n";
         }
         return $movieList;
     }
@@ -478,7 +463,7 @@ class MyCima implements MovieServerInterface
             ]);
             $invalidCond = str_contains($response->getContent(), 'File Not Found') || str_contains($response->getContent(), 'File is');
             return !$invalidCond;
-        }catch (\Exception $e) {
+        } catch (\Exception $e) {
             dump($e->getMessage());
             return false;
         }

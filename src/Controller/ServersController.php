@@ -26,17 +26,17 @@ class ServersController extends AbstractController
         $this->initializeServers();
     }
 
-    public function search($query, Request $request): array
+    public function search($query): array
     {
         //get search result from servers
         //todo: try to get the result from database first and if theres no result then fetch it from the net
         //todo: find a way to update database movies something like fetched the last added movies once a day
        //todo:optimize search
-        $movieList = $this->getMovieListFromDB($query);
-        //$movieList = [];
+       // $movieList = $this->getMovieListFromDB($query);
+        $movieList = [];
         if (empty($movieList)) {
             //search all server and add result to db
-            $this->searchAllServers($query, $request);
+            $this->searchAllServers($query);
             //fetch result again from db
             $movieList = $this->getMovieListFromDB($query);
         }
@@ -71,7 +71,25 @@ class ServersController extends AbstractController
     {
         /** @var MovieServerInterface $server */
         $server = $this->servers[$source->getServer()->getName()];
-        return $server->fetchSource($source);
+
+        if ($source->getState() === Movie::STATE_ITEM ){
+            return $server->fetchItem($source);
+        }
+
+        $movie = $source->getMovie();
+        //todo check if works for android like that
+        if ($movie->getSubMovies()->count() > 0){
+            return $movie;
+        }
+        /** @var Movie $result */
+        $result = match ($source->getState()) {
+            Movie::STATE_GROUP_OF_GROUP => $server->fetchGroupOfGroup($source),
+            Movie::STATE_GROUP => $server->fetchGroup($source),
+        };
+
+        $this->matchMovieList($result->getSubMovies()->toArray(), $server);
+
+        return $result;
     }
 
     private function initializeServers()
@@ -94,19 +112,20 @@ class ServersController extends AbstractController
         //myCima
         //fetch new Server() from db
         //todo: suggest refactoring
-//        $myCimaServerConfig = $this->entityManager->getRepository(Server::class)->findOneBy(['name' => Server::SERVER_MYCIMA]);
-//        dump('initializeServers SERVER_MYCIMA:');
-//        if (!$myCimaServerConfig) {
-//            $myCimaServerConfig = new Server();
-//            $myCimaServerConfig->setName(Server::SERVER_MYCIMA);
-//            $myCimaServerConfig->setWebAddress('https://mycima10.wecima.watch');
-//            //only the first time if server is not saved to db
-//            $myCimaServerConfig->setActive(true);
-//            //only the first time if server is not saved to db
-//            $this->entityManager->persist($myCimaServerConfig);
-//            $this->entityManager->flush();
-//        }
-//        $this->servers[Server::SERVER_MYCIMA] = MyCima::getInstance($this->httpClient, $myCimaServerConfig);
+        $myCimaServerConfig = $this->entityManager->getRepository(Server::class)->findOneBy(['name' => Server::SERVER_MYCIMA]);
+
+        if (!$myCimaServerConfig) {
+            $myCimaServerConfig = new Server();
+            $myCimaServerConfig->setName(Server::SERVER_MYCIMA);
+            $myCimaServerConfig->setWebAddress('https://wemycema.shop');
+            $myCimaServerConfig->setDefaultWebAddress('https://mycima.io');
+            //only the first time if server is not saved to db
+            $myCimaServerConfig->setActive(true);
+            //only the first time if server is not saved to db
+            $this->entityManager->persist($myCimaServerConfig);
+            $this->entityManager->flush();
+        }
+        $this->servers[Server::SERVER_MYCIMA] = MyCima::getInstance($this->httpClient, $myCimaServerConfig);
 
         //todo: other server ...
     }
@@ -116,12 +135,12 @@ class ServersController extends AbstractController
         return $this->entityManager->getRepository(Movie::class)->findMainMoviesByTitleLoose($query);
     }
 
-    private function searchAllServers($query, Request $request)
+    private function searchAllServers($query)
     {
         //todo: doing it using thread or workers for performance
         /** @var MovieServerInterface $server */
         foreach ($this->servers as $server) {
-            $result = $server->search($query, $request);
+            $result = $server->search($query);
             //todo: in new process match it with database and add it if missing
             $this->matchMovieList($result, $server);
         }
@@ -216,6 +235,7 @@ class ServersController extends AbstractController
             if ($movie->getSources()->first()) {
                 $this->entityManager->persist($movie->getSources()->first());
             }
+
             $this->entityManager->persist($movie);
             $this->entityManager->flush();
         }
@@ -224,7 +244,7 @@ class ServersController extends AbstractController
     private function getCleanTitle(?string $title)
     {
         // Array of words to be replaced
-        $replace = array('series', '-', '_', 'season', 'مسلسل', 'فيلم', 'فلم', 'موسم', 'مشاهدة', 'مترجم');
+        $replace = array('series', '-', '_', 'season', 'مسلسل', 'فيلم', 'فلم', 'موسم', 'مشاهدة', 'مترجم', 'انمي', 'أنمي');
         $title = str_ireplace($replace, '', $title);
 
         // Replace 4 digit numbers

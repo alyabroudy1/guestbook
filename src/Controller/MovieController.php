@@ -35,11 +35,12 @@ class MovieController extends AbstractController
     public const MOVIE_PATH = 'movie';
 
     public function __construct(
-        private ServersController $serversController,
+        private ServersController   $serversController,
         private SerializerInterface $serializer
     )
     {
     }
+
     /**
      * Searches for movies based on the provided query.
      *
@@ -49,7 +50,7 @@ class MovieController extends AbstractController
     #[Route('/search/{query}', name: 'app_movie_search')]
     public function search($query, Request $request): JsonResponse
     {
-        $movieList = $this->serversController->search($query, $request);
+        $movieList = $this->serversController->search($query);
 
 //        $data = [
 //            'type' => 'search',
@@ -67,10 +68,9 @@ class MovieController extends AbstractController
     {
         //todo: check incoming movie state
         //if available in db the next state return it or fetch it and return it
-        if ($source === null ){
+        if ($source === null) {
             return new JsonResponse();
         }
-
         $result = $this->serversController->fetchSource($source);
 
         $json = $this->serialize([$result]);
@@ -98,7 +98,11 @@ class MovieController extends AbstractController
             'json',
             [
                 AbstractNormalizer::GROUPS => 'movie_export',
-                JsonEncode::OPTIONS => JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+                JsonEncode::OPTIONS => JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES,
+                AbstractNormalizer::CIRCULAR_REFERENCE_HANDLER => function ($object, $format, $context) {
+                  //  if ($object instanceof Movie)
+                        return $object->getId();
+                },
             ]
         );
         return $json;

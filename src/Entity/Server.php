@@ -39,6 +39,9 @@ class Server
     #[ORM\Column(nullable: true)]
     private ?bool $active = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $defaultWebAddress = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -112,6 +115,18 @@ class Server
     public function setActive(?bool $active): static
     {
         $this->active = $active;
+
+        return $this;
+    }
+
+    public function getDefaultWebAddress(): ?string
+    {
+        return $this->defaultWebAddress;
+    }
+
+    public function setDefaultWebAddress(?string $defaultWebAddress): static
+    {
+        $this->defaultWebAddress = $defaultWebAddress;
 
         return $this;
     }
