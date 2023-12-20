@@ -44,28 +44,28 @@ class ServersController extends AbstractController
         return $movieList;
     }
 
-    public function fetchMovie(Movie $movie): array
-    {
-//        $jsonData = match ($movie->getState()){
-//            Movie::STATE_ITEM => $this->serversController->fetchMovie($movie)
-//        };
+//    public function fetchMovie(Movie $movie): array
+//    {
+////        $jsonData = match ($movie->getState()){
+////            Movie::STATE_ITEM => $this->serversController->fetchMovie($movie)
+////        };
+////
 //
-
-        $movieList = $this->entityManager->getRepository(Movie::class)->findSubMovies($movie);
-        if (empty($movieList) && $movie->getSources()->count() > 0) {
-            $source = $movie->getSources()->get(0);
-            /** @var MovieServerInterface $server */
-            $server = $this->servers[$source->getServer()->getName()];
-            //fetch result again from db
-            $movieList = $server->fetchMovie($movie);
-            dd('fetchMovie',$movieList);
-            //save to data base movies with only groupOfGroup, Group, Item
-            if ($movie->getState() < Movie::STATE_RESOLUTION){
-                $this->matchMovieList($movieList, $server);
-            }
-        }
-        return $movieList;
-    }
+//        $movieList = $this->entityManager->getRepository(Movie::class)->findSubMovies($movie);
+//        if (empty($movieList) && $movie->getSources()->count() > 0) {
+//            $source = $movie->getSources()->get(0);
+//            /** @var MovieServerInterface $server */
+//            $server = $this->servers[$source->getServer()->getName()];
+//            //fetch result again from db
+//            $movieList = $server->fetchMovie($movie);
+//            dd('fetchMovie',$movieList);
+//            //save to data base movies with only groupOfGroup, Group, Item
+//            if ($movie->getState() < Movie::STATE_RESOLUTION){
+//                $this->matchMovieList($movieList, $server);
+//            }
+//        }
+//        return $movieList;
+//    }
 
     public function fetchSource(Source $source): Movie
     {

@@ -68,9 +68,6 @@ class MovieController extends AbstractController
     {
         //todo: check incoming movie state
         //if available in db the next state return it or fetch it and return it
-        if ($source === null) {
-            return new JsonResponse();
-        }
         $result = $this->serversController->fetchSource($source);
 
         $json = $this->serialize([$result]);

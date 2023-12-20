@@ -4,7 +4,6 @@ namespace App\servers;
 
 use App\Controller\MovieController;
 use App\Entity\Movie;
-use App\Entity\MovieSource;
 use App\Entity\Server;
 use App\Entity\Source;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -167,34 +166,29 @@ class AkwamTube implements MovieServerInterface
     }
 
 
-    public function fetchMovie(Movie $movie): Movie
-    {
-        dump('akwam fetchMovie:', $movie);
-                return match ($movie->getState()){
-            Movie::STATE_ITEM => $this->fetchItem($movie)
-        };
-//        $mainMovie1 = new Movie();
-//        $mainMovie1->setTitle("ratched sub1");
-//        $mainMovie1->setState(Movie::STATE_GROUP);
-//
-//        $source1 = new Source();
-//        $source1->setState(Movie::STATE_GROUP);
-//        $source1->setServer($this->serverConfig);
-//        $source1->setVidoUrl("ratcheds1s1");
-//        $mainMovie1->addSource($source1);
-//
-//        $movie->addSubMovie($mainMovie1);
-//
-//        return [$mainMovie1];
-        // TODO: Implement fetchMovie() method.
-    }
+//    public function fetchMovie(Movie $movie): Movie
+//    {
+//        dump('akwam fetchMovie:', $movie);
+//                return match ($movie->getState()){
+//            Movie::STATE_ITEM => $this->fetchItem($movie)
+//        };
+////        $mainMovie1 = new Movie();
+////        $mainMovie1->setTitle("ratched sub1");
+////        $mainMovie1->setState(Movie::STATE_GROUP);
+////
+////        $source1 = new Source();
+////        $source1->setState(Movie::STATE_GROUP);
+////        $source1->setServer($this->serverConfig);
+////        $source1->setVidoUrl("ratcheds1s1");
+////        $mainMovie1->addSource($source1);
+////
+////        $movie->addSubMovie($mainMovie1);
+////
+////        return [$mainMovie1];
+//        // TODO: Implement fetchMovie() method.
+//    }
 
-    public function fetchItem(Movie $movie): Movie
-    {
-        // TODO: Implement fetchSource() method.
-
-    }
-    public function fetchSource(Source $source): Movie
+    public function fetchItem(Source $source): Movie
     {
         $url = $this->serverConfig->getWebAddress() . $source->getVidoUrl();
 
@@ -247,6 +241,11 @@ class AkwamTube implements MovieServerInterface
         }
         //todo update server webaddress in db from $realUrl
         return $mov;
+
+    }
+    public function fetchSource(Source $source): Movie
+    {
+        return $source->getMovie();
     }
 
     function extractDomainfromUrl($videoUrl) {
