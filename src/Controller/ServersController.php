@@ -31,8 +31,8 @@ class ServersController extends AbstractController
         //get search result from servers
         //todo: try to get the result from database first and if theres no result then fetch it from the net
         //todo: find a way to update database movies something like fetched the last added movies once a day
-       //todo:optimize search
-       // $movieList = $this->getMovieListFromDB($query);
+        //todo:optimize search
+        // $movieList = $this->getMovieListFromDB($query);
         $movieList = [];
         if (empty($movieList)) {
             //search all server and add result to db
@@ -72,24 +72,31 @@ class ServersController extends AbstractController
         /** @var MovieServerInterface $server */
         $server = $this->servers[$source->getServer()->getName()];
 
-        if ($source->getState() === Movie::STATE_ITEM ){
+        if ($source->getState() === Movie::STATE_ITEM) {
             return $server->fetchItem($source);
         }
-
         $movie = $source->getMovie();
         //todo check if works for android like that
-        if ($movie->getSubMovies()->count() > 0){
+        if ($movie->getSubMovies()->count() > 0) {
             return $movie;
         }
+
         /** @var Movie $result */
         $result = match ($source->getState()) {
             Movie::STATE_GROUP_OF_GROUP => $server->fetchGroupOfGroup($source),
             Movie::STATE_GROUP => $server->fetchGroup($source),
         };
 
-        $this->matchMovieList($result->getSubMovies()->toArray(), $server);
+        $toMatchMovie = match ($result->getState()) {
+            Movie::STATE_GROUP_OF_GROUP => $result,
+            Movie::STATE_GROUP => $result->getMainMovie() ?? $result,
+            Movie::STATE_ITEM => $result->getMainMovie() ? ($result->getMainMovie()->getMainMovie() ?? $result->getMainMovie()) : $result
+        };
 
-        return $result;
+        $this->matchMovie($toMatchMovie, $server);
+        $this->entityManager->refresh($movie);;
+
+        return $movie;
     }
 
     private function initializeServers()
@@ -151,7 +158,7 @@ class ServersController extends AbstractController
         //todo: in new process match it with database and add it if missing
         foreach ($movieList as $movie) {
             //todo: optimize
-            if ($movie->getState() === Movie::STATE_VIDEO || $movie->getState() === Movie::STATE_RESOLUTION){
+            if ($movie->getState() === Movie::STATE_VIDEO || $movie->getState() === Movie::STATE_RESOLUTION) {
                 continue;
             }
 
@@ -175,13 +182,13 @@ class ServersController extends AbstractController
 //        }
         //todo: optimize
         $title = $this->getCleanTitle($movie->getTitle());
-        $result =  $this->entityManager->getRepository(Movie::class)->findByTitleAndState($title, $movie->getState());
+        $result = $this->entityManager->getRepository(Movie::class)->findByTitleAndState($title, $movie->getState());
         //dump('getExistingMovie result', $result);
         $matchedMovie = null;
 
-        if (count($result) > 0){
-                /** @var Movie $matchedMovie */
-         $matchedMovie = $this->detectCorrectMatch($result, $movie);
+        if (count($result) > 0) {
+            /** @var Movie $matchedMovie */
+            $matchedMovie = $this->detectCorrectMatch($result, $movie);
         }
 
         return $matchedMovie;
@@ -190,10 +197,10 @@ class ServersController extends AbstractController
     private function detectCorrectMatch(array $existingMovies, mixed $movie)
     {
         $title = $this->getCleanTitle($movie->getTitle());
-        foreach ($existingMovies as $existingMovie){
+        foreach ($existingMovies as $existingMovie) {
             $existingTitle = $this->getCleanTitle($existingMovie->getTitle());
-           // dump($title. ', '.$existingTitle, $existingTitle === $title);
-            if ($existingTitle === $title ) {
+            // dump($title. ', '.$existingTitle, $existingTitle === $title);
+            if ($existingTitle === $title) {
                 return $existingMovie;
             }
         }
@@ -202,28 +209,50 @@ class ServersController extends AbstractController
 
     private function matchMovie(Movie $movie, $server)
     {
-       // dump('matchMovie', $movie->getTitle());
+        // dump('matchMovie', $movie->getTitle());
         $existingMovie = $this->getExistingMovie($movie);
 
         if ($existingMovie) {
-            //todo: match other cases
-            if ($movie->getState() === Movie::STATE_ITEM) {
-                $itemSources = $existingMovie->getSources();
-                foreach ($movie->getSources() as $source) {
-                    //means it's they are both in the same level
-                    //check if the source exist els add it
-                    foreach ($itemSources as $mainSource) {
-                        if ($mainSource->getVidoUrl() === $source->getVidoUrl()) {
-                            //if exist continue
-                            continue;
-                        }
-                        $source->setMovie($existingMovie);
-                        $existingMovie->addSource($source);
-                        $this->entityManager->persist($source);
-                       // $this->entityManager->flush();
+            $newSources = $movie->getSources();
+            $existingSources = $existingMovie->getSources();
+            $sameServer = $newSources->first()->getServer() === $existingSources->first()->getServer();
+            if (!$sameServer) {
+                if ($newSources->first()->getVidoUrl() !== $existingMovie->first()->getVidoUrl()) {
+                    $existingMovie->addSource($newSources->first());
+                }
+            }
+            /** @var Movie $subMovie */
+            foreach ($movie->getSubMovies() as $subMovie) {
+                $existingSubMovieIndex = $this->subMovieExist($existingMovie->getSubMovies(), $subMovie);
+                if ($existingSubMovieIndex === null){ // subMovie doesnt exisit
+                    $subMovie->setMovie($existingMovie);
+                    $existingMovie->addSubMovie($subMovie);
+                }else{
+                    if (!$sameServer) {
+                        $existingMovie->getSubMovies()->get($existingSubMovieIndex)->addSource($subMovie->getSources()->first());
                     }
                 }
             }
+            $this->entityManager->flush();
+            //''#################
+//            //todo: match other cases
+//            if ($movie->getState() === Movie::STATE_ITEM) {
+//                $itemSources = $existingMovie->getSources();
+//                foreach ($movie->getSources() as $source) {
+//                    //means it's they are both in the same level
+//                    //check if the source exist els add it
+//                    foreach ($itemSources as $mainSource) {
+//                        if ($mainSource->getVidoUrl() === $source->getVidoUrl()) {
+//                            //if exist continue
+//                            continue;
+//                        }
+//                        $source->setMovie($existingMovie);
+//                        $existingMovie->addSource($source);
+//                        $this->entityManager->persist($source);
+//                        // $this->entityManager->flush();
+//                    }
+//                }
+//            }
         } else {
             //if not exist add it
             //only if its an item movie
@@ -264,12 +293,12 @@ class ServersController extends AbstractController
     {
         $subMovies = $movie->getSubMovies();
         //try to get its sub movies from db
-        if ($subMovies->count() === 0){
+        if ($subMovies->count() === 0) {
             $subMovies = $this->entityManager->getRepository(Movie::class)->findBy(['mainMovie' => 1]);
         }
 
-        if ($subMovies === null || count($subMovies) === 0){
-            if (!empty($movie->getSources())){
+        if ($subMovies === null || count($subMovies) === 0) {
+            if (!empty($movie->getSources())) {
                 $serverName = $movie->getSources()->get(0)->getServer()->getName();
                 /** @var MovieServerInterface $server */
                 $server = $this->servers[$serverName];
@@ -280,7 +309,7 @@ class ServersController extends AbstractController
             }
             //todo: we may do something if source is empty
         }
-        if ($subMovies instanceof Collection){
+        if ($subMovies instanceof Collection) {
             $subMovies = $subMovies->toArray();
         }
         return $subMovies;
@@ -289,5 +318,15 @@ class ServersController extends AbstractController
     private function fetchMovieSublist(Movie $movie)
     {
         //check if sublist in db else fetch from server
+    }
+
+    private function subMovieExist(Collection $oldSubMovies, Source|Movie $newSubMovie)
+    {
+        foreach ($oldSubMovies as $oldMovie){
+            if ($newSubMovie->getTitle() === $oldMovie->getTitle()){
+                return $oldSubMovies->indexOf($oldMovie);
+            }
+        }
+        return null;
     }
 }

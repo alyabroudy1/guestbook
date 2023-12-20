@@ -320,6 +320,7 @@ class MyCima implements MovieServerInterface
     {
         $movieUrl = $source->getServer()->getWebAddress() . $source->getVidoUrl();
         $mainMovie = $source->getMovie();
+
         try {
             $response = $this->httpClient->request('GET', $movieUrl, [
             ]);
@@ -355,7 +356,6 @@ class MyCima implements MovieServerInterface
                     $episode->setMainMovie($mainMovie);
                     $episode->setTitle($title);
                     $episode->setState($state);
-
                     $source = new Source();
                     $source->setServer($this->serverConfig);
                     $source->setVidoUrl($videoUrl);
@@ -370,6 +370,7 @@ class MyCima implements MovieServerInterface
         } catch (\Exception $e) {
             echo "Our PHP adventure continues, but there might be some bumps in the road!\n";
         }
+
         return $mainMovie;
     }
 
