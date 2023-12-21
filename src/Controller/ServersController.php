@@ -6,6 +6,7 @@ use App\Entity\Movie;
 use App\Entity\Server;
 use App\Entity\Source;
 use App\servers\AkwamTube;
+use App\servers\MovieMatcher;
 use App\servers\MovieServerInterface;
 use App\servers\MyCima;
 use Doctrine\Common\Collections\Collection;
@@ -21,7 +22,7 @@ class ServersController extends AbstractController
 {
     private $servers;
 
-    public function __construct(private HttpClientInterface $httpClient, private EntityManagerInterface $entityManager)
+    public function __construct(private HttpClientInterface $httpClient, private EntityManagerInterface $entityManager, private MovieMatcher $matcher)
     {
         $this->initializeServers();
     }
@@ -75,11 +76,6 @@ class ServersController extends AbstractController
         if ($source->getState() === Movie::STATE_ITEM) {
             return $server->fetchItem($source);
         }
-        $movie = $source->getMovie();
-        //todo check if works for android like that
-        if ($movie->getSubMovies()->count() > 0) {
-            return $movie;
-        }
 
         /** @var Movie $result */
         $result = match ($source->getState()) {
@@ -87,16 +83,9 @@ class ServersController extends AbstractController
             Movie::STATE_GROUP => $server->fetchGroup($source),
         };
 
-        $toMatchMovie = match ($result->getState()) {
-            Movie::STATE_GROUP_OF_GROUP => $result,
-            Movie::STATE_GROUP => $result->getMainMovie() ?? $result,
-            Movie::STATE_ITEM => $result->getMainMovie() ? ($result->getMainMovie()->getMainMovie() ?? $result->getMainMovie()) : $result
-        };
+        $this->entityManager->refresh($source->getMovie());;
 
-        $this->matchMovie($toMatchMovie, $server);
-        $this->entityManager->refresh($movie);;
-
-        return $movie;
+        return $source->getMovie();
     }
 
     private function initializeServers()
@@ -132,7 +121,7 @@ class ServersController extends AbstractController
             $this->entityManager->persist($myCimaServerConfig);
             $this->entityManager->flush();
         }
-        $this->servers[Server::SERVER_MYCIMA] = MyCima::getInstance($this->httpClient, $myCimaServerConfig);
+        $this->servers[Server::SERVER_MYCIMA] = MyCima::getInstance($this->httpClient, $myCimaServerConfig, $this->matcher);
 
         //todo: other server ...
     }
@@ -144,192 +133,13 @@ class ServersController extends AbstractController
 
     private function searchAllServers($query)
     {
+
         //todo: doing it using thread or workers for performance
         /** @var MovieServerInterface $server */
         foreach ($this->servers as $server) {
             $result = $server->search($query);
-            //todo: in new process match it with database and add it if missing
-            $this->matchMovieList($result, $server);
+            $this->matcher->matchSearchList($result, $server);
         }
     }
 
-    private function matchMovieList(array $movieList, $server)
-    {
-        //todo: in new process match it with database and add it if missing
-        foreach ($movieList as $movie) {
-            //todo: optimize
-
-
-            $this->matchMovie($movie, $server);
-        }
-    }
-
-    private function getExistingMovie(Movie $movie)
-    {
-//        $mainMovie = $movie->getMainMovie();
-//        if(empty($mainMovie)){
-//            $mainMovie = $movie;
-//        }
-//        else{
-//            if(!empty($mainMovie->getMainMovie())){
-//                $mainMovie = $mainMovie->getMainMovie();
-//                if(!empty($mainMovie->getMainMovie())){
-//                    $mainMovie = $mainMovie->getMainMovie();
-//                }
-//            }
-//        }
-        //todo: optimize
-        $title = $this->getCleanTitle($movie->getTitle());
-        $result = $this->entityManager->getRepository(Movie::class)->findByTitleAndState($title, $movie->getState());
-        //dump('getExistingMovie result', $result);
-        $matchedMovie = null;
-
-        if (count($result) > 0) {
-            /** @var Movie $matchedMovie */
-            $matchedMovie = $this->detectCorrectMatch($result, $movie);
-        }
-
-        return $matchedMovie;
-    }
-
-    private function detectCorrectMatch(array $existingMovies, mixed $movie)
-    {
-        $title = $this->getCleanTitle($movie->getTitle());
-        foreach ($existingMovies as $existingMovie) {
-            $existingTitle = $this->getCleanTitle($existingMovie->getTitle());
-            // dump($title. ', '.$existingTitle, $existingTitle === $title);
-            if ($existingTitle === $title) {
-                return $existingMovie;
-            }
-        }
-        return null;
-    }
-
-    private function matchMovie(Movie $movie, $server)
-    {
-        if (
-            $movie->getState() > Movie::STATE_ITEM) {
-            return;
-        }
-
-        // dump('matchMovie', $movie->getTitle());
-        $existingMovie = $this->getExistingMovie($movie);
-
-        if ($existingMovie) {
-            $newSources = $movie->getSources();
-            $existingSources = $existingMovie->getSources();
-            $sameServer = $newSources->first()->getServer() === $existingSources->first()->getServer();
-            if (!$sameServer) {
-                if ($newSources->first()->getVidoUrl() !== $existingSources->first()->getVidoUrl()) {
-                    $existingMovie->addSource($newSources->first());
-                }
-            }
-            /** @var Movie $subMovie */
-            foreach ($movie->getSubMovies() as $subMovie) {
-                $existingSubMovieIndex = $this->subMovieExist($existingMovie->getSubMovies(), $subMovie);
-                if ($existingSubMovieIndex === null){ // subMovie doesnt exisit
-                    $subMovie->setMovie($existingMovie);
-                    $existingMovie->addSubMovie($subMovie);
-                }else{
-                    if (!$sameServer) {
-                        $existingMovie->getSubMovies()->get($existingSubMovieIndex)->addSource($subMovie->getSources()->first());
-                    }
-                }
-            }
-            $this->entityManager->flush();
-            //''#################
-//            //todo: match other cases
-//            if ($movie->getState() === Movie::STATE_ITEM) {
-//                $itemSources = $existingMovie->getSources();
-//                foreach ($movie->getSources() as $source) {
-//                    //means it's they are both in the same level
-//                    //check if the source exist els add it
-//                    foreach ($itemSources as $mainSource) {
-//                        if ($mainSource->getVidoUrl() === $source->getVidoUrl()) {
-//                            //if exist continue
-//                            continue;
-//                        }
-//                        $source->setMovie($existingMovie);
-//                        $existingMovie->addSource($source);
-//                        $this->entityManager->persist($source);
-//                        // $this->entityManager->flush();
-//                    }
-//                }
-//            }
-        } else {
-            //if not exist add it
-            //only if its an item movie
-            //refactor movie to be ready to save
-            // $this->refactorMovieForSave($movie, $server);
-            //todo: optimize cleaning the title before save and before cleaning title to search in db
-            $title = $this->getCleanTitle($movie->getTitle());
-            $movie->setTitle($title);
-            if ($movie->getSources()->first()) {
-                $this->entityManager->persist($movie->getSources()->first());
-            }
-
-            $this->entityManager->persist($movie);
-            $this->entityManager->flush();
-        }
-    }
-
-    private function getCleanTitle(?string $title)
-    {
-        // Array of words to be replaced
-        $replace = array('series', '-', '_', 'season', 'مسلسل', 'فيلم', 'فلم', 'موسم', 'مشاهدة', 'مترجم', 'انمي', 'أنمي');
-        $title = str_ireplace($replace, '', $title);
-
-        // Replace 4 digit numbers
-        //$title = preg_replace('/\b\d{4}\b/', '', $title);
-
-        // Extra spaces should be removed from the title
-        $title = trim($title);
-        $title = strtolower($title);
-
-        // Multiple spaces between words should be replaced with only one space
-        $title = preg_replace('!\s+!', ' ', $title);
-
-        return trim($title);
-    }
-
-    private function fetchNextLevelMovie(Movie $movie)
-    {
-        $subMovies = $movie->getSubMovies();
-        //try to get its sub movies from db
-        if ($subMovies->count() === 0) {
-            $subMovies = $this->entityManager->getRepository(Movie::class)->findBy(['mainMovie' => 1]);
-        }
-
-        if ($subMovies === null || count($subMovies) === 0) {
-            if (!empty($movie->getSources())) {
-                $serverName = $movie->getSources()->get(0)->getServer()->getName();
-                /** @var MovieServerInterface $server */
-                $server = $this->servers[$serverName];
-                //todo: cache
-                $subMovies = $server->fetchMovie($movie);
-                //todo: in new process match it with database and add it if missing
-                $this->matchMovieList($subMovies, $server);
-            }
-            //todo: we may do something if source is empty
-        }
-        if ($subMovies instanceof Collection) {
-            $subMovies = $subMovies->toArray();
-        }
-        return $subMovies;
-    }
-
-    private function fetchMovieSublist(Movie $movie)
-    {
-        //check if sublist in db else fetch from server
-    }
-
-    private function subMovieExist(Collection $oldSubMovies, Source|Movie $newSubMovie)
-    {
-        foreach ($oldSubMovies as $oldMovie){
-            if ($newSubMovie->getTitle() === $oldMovie->getTitle()){
-                return $oldSubMovies->indexOf($oldMovie);
-            }
-        }
-        return null;
-    }
 }

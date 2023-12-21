@@ -3,7 +3,6 @@
 namespace App\servers;
 
 use App\Entity\Movie;
-use App\Entity\MovieSource;
 use App\Entity\Server;
 use App\Entity\Source;
 use Symfony\Component\DomCrawler\Crawler;
@@ -18,15 +17,15 @@ class MyCima implements MovieServerInterface
     private ?int $id = null;
     private static ?MyCima $instance = null;
 
-    private function __construct(private HttpClientInterface $httpClient, private Server $serverConfig)
+    private function __construct(private HttpClientInterface $httpClient, private Server $serverConfig, private MovieMatcher $movieMatcher)
     {
         $this->init();
     }
 
-    public static function getInstance(HttpClientInterface $httpClient, Server $serverConfig): static
+    public static function getInstance(HttpClientInterface $httpClient, Server $serverConfig, MovieMatcher $movieMatcher): static
     {
         if (!self::$instance) {
-            $instance = new self($httpClient, $serverConfig);
+            $instance = new self($httpClient, $serverConfig, $movieMatcher);
         }
         return $instance;
     }
@@ -304,9 +303,8 @@ class MyCima implements MovieServerInterface
                         $source->setVidoUrl($videoUrl);
                         $source->setState($state);
                         $source->setTitle($title);
-                        $season->addSource($source);
 
-                        $mainMovie->addSubMovie($season);
+                        $this->movieMatcher->matchMovie($mainMovie, $season, $source);
                     });
                 });
             }
@@ -356,15 +354,14 @@ class MyCima implements MovieServerInterface
                     $episode->setMainMovie($mainMovie);
                     $episode->setTitle($title);
                     $episode->setState($state);
+
                     $source = new Source();
                     $source->setServer($this->serverConfig);
                     $source->setVidoUrl($videoUrl);
                     $source->setState($state);
                     $source->setTitle($title);
 
-                    $episode->addSource($source);
-
-                    $mainMovie->addSubMovie($episode);
+                    $this->movieMatcher->matchMovie($mainMovie, $episode, $source);
                 });
             });
         } catch (\Exception $e) {
