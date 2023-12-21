@@ -158,7 +158,8 @@ class ServersController extends AbstractController
         //todo: in new process match it with database and add it if missing
         foreach ($movieList as $movie) {
             //todo: optimize
-            if ($movie->getState() === Movie::STATE_VIDEO || $movie->getState() === Movie::STATE_RESOLUTION) {
+            if (
+                $movie->getState() > Movie::STATE_ITEM) {
                 continue;
             }
 
@@ -217,7 +218,7 @@ class ServersController extends AbstractController
             $existingSources = $existingMovie->getSources();
             $sameServer = $newSources->first()->getServer() === $existingSources->first()->getServer();
             if (!$sameServer) {
-                if ($newSources->first()->getVidoUrl() !== $existingMovie->first()->getVidoUrl()) {
+                if ($newSources->first()->getVidoUrl() !== $existingSources->first()->getVidoUrl()) {
                     $existingMovie->addSource($newSources->first());
                 }
             }
