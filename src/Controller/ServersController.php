@@ -32,8 +32,8 @@ class ServersController extends AbstractController
         //todo: try to get the result from database first and if theres no result then fetch it from the net
         //todo: find a way to update database movies something like fetched the last added movies once a day
         //todo:optimize search
-        // $movieList = $this->getMovieListFromDB($query);
-        $movieList = [];
+       $movieList = $this->getMovieListFromDB($query);
+        //$movieList = [];
         if (empty($movieList)) {
             //search all server and add result to db
             $this->searchAllServers($query);
@@ -158,10 +158,7 @@ class ServersController extends AbstractController
         //todo: in new process match it with database and add it if missing
         foreach ($movieList as $movie) {
             //todo: optimize
-            if (
-                $movie->getState() > Movie::STATE_ITEM) {
-                continue;
-            }
+
 
             $this->matchMovie($movie, $server);
         }
@@ -210,6 +207,11 @@ class ServersController extends AbstractController
 
     private function matchMovie(Movie $movie, $server)
     {
+        if (
+            $movie->getState() > Movie::STATE_ITEM) {
+            return;
+        }
+
         // dump('matchMovie', $movie->getTitle());
         $existingMovie = $this->getExistingMovie($movie);
 
