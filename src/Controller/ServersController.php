@@ -149,6 +149,7 @@ class ServersController extends AbstractController
             /** @var MovieServerInterface $server */
             $server = $this->servers[Server::SERVER_MYCIMA];
             $result = $server->search($server->getServerConfig()->getWebAddress().'/seriestv/');
+            $this->matcher->matchSearchList($result, $server);
         }
         return $result;
     }
