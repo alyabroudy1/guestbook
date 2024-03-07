@@ -86,6 +86,7 @@ class Movie
     private ?string $videoUrl = null;
 
     #[ORM\ManyToMany(targetEntity: Category::class)]
+    #[Groups('movie_export')]
     private Collection $categories;
 
     public function __construct()
