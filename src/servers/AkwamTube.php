@@ -3,6 +3,7 @@
 namespace App\servers;
 
 use App\Controller\MovieController;
+use App\Entity\Category;
 use App\Entity\Movie;
 use App\Entity\Server;
 use App\Entity\Source;
@@ -114,6 +115,14 @@ class AkwamTube implements MovieServerInterface
             $movie->setCardImage($cardImage);
             $movie->setBackgroundImage($cardImage);
             $movie->setState($state);
+
+            $category = new Category();
+            $category->setName('general');
+            $movie->addCategory($category);
+
+            $category2 = new Category();
+            $category2->setName('AkwamTube');
+            $movie->addCategory($category2);
 
             $source = new Source();
             $source->setServer($this->serverConfig);

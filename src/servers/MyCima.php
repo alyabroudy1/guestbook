@@ -2,6 +2,7 @@
 
 namespace App\servers;
 
+use App\Entity\Category;
 use App\Entity\Movie;
 use App\Entity\Server;
 use App\Entity\Source;
@@ -334,7 +335,7 @@ class MyCima implements MovieServerInterface
             }
 
             $boxs = $crawler->filter('.Episodes--Seasons--Episodes');
-            $boxs->each(function (Crawler $box) use (&$mainMovie) {
+            $boxs->each(function (Crawler $box) use (&$mainMovie, $crawler) {
                 $lis = $box->filter('a');
 
                 $lis->each(function (Crawler $li) use (&$mainMovie) {
@@ -363,6 +364,7 @@ class MyCima implements MovieServerInterface
 
                     $this->movieMatcher->matchMovie($mainMovie, $episode, $source);
                 });
+//                $this->fetchHiddenEpisodes($crawler, $mainMovie);
             });
         } catch (\Exception $e) {
             echo "Our PHP adventure continues, but there might be some bumps in the road!\n";
@@ -438,6 +440,13 @@ class MyCima implements MovieServerInterface
                     $movie->setCardImage($image);
                     $movie->setBackgroundImage($image);
                     $movie->setState($state);
+                    $category = new Category();
+                    $category->setName('general');
+                    $movie->addCategory($category);
+
+                    $category2 = new Category();
+                    $category2->setName('Mycima');
+                    $movie->addCategory($category2);
 
                     $source = new Source();
                     $source->setServer($this->serverConfig);
@@ -466,5 +475,73 @@ class MyCima implements MovieServerInterface
             return false;
         }
     }
+
+//    private function fetchHiddenEpisodes(Crawler $crawler, Movie $movie)
+//    {
+//        //MoreEpisodes--Button hoverable activable
+//        $moreEp = $crawler->filter('.MoreEpisodes--Button');
+//        if (count($moreEp) > 0) {
+//            $name = $moreEp->attr('data-term');
+//            if ($name === null) {
+//                $name = $movie->getTitle(); // Assuming $movie is an object with a getTitle method
+//            }
+//
+//            $domain = extractDomain($movie->getVideoUrl()); // Assuming extractDomain is a function you have defined
+//            $moreUrl = $domain . "/AjaxCenter/MoreEpisodes/" . $name . "/" . count($lis) . "/"; // Assuming $lis is an array
+//
+//            // Use GuzzleHttp\Client to make the HTTP request
+//            $client = new \GuzzleHttp\Client();
+//            $res = $client->request('GET', $moreUrl, [
+//                'headers' => [
+//                    'Content-Type' => '*/*',
+//                    'Accept' => '*/*'
+//                ],
+//                'allow_redirects' => true,
+//                'http_errors' => false,
+//                'timeout' => 9.0
+//            ]);
+//
+//            $doc2 = new Crawler((string) $res->getBody());
+//
+//            $links = $doc2->filter('[href]');
+//
+//            foreach ($links as $link) {
+//                $titleElm = $crawler->filter('episodetitle')->first();
+//                $title = $movie->getTitle();
+//                if ($titleElm !== null) {
+//                    $title = str_replace(["<\\/episodeTitle><\\/episodeArea><\\/a>", "\\", "\""], "", $titleElm->text());
+//
+//                    $linkUrl = $link->attr('href');
+//
+//                    $a = new Movie(); // Assuming Movie is a class you have defined
+//                    $a->setStudio(Movie::SERVER_MyCima);
+//
+//                    $episode = clone $movie;
+//                    $episode->setTitle($title);
+//                    $episode->setVideoUrl($linkUrl);
+//                    $episode->setState(Movie::ITEM_STATE);
+//
+//                    if ($movie->getSubList() === null) {
+//                        $movie->setSubList([]);
+//                    }
+//
+//                    $movie->addSubList($episode); // Assuming addSubList is a method you have defined in the Movie class
+//
+//                    $episode = $mainMovie->cloneMovie();
+//                    $episode->setMainMovie($mainMovie);
+//                    $episode->setTitle($title);
+//                    $episode->setState($state);
+//
+//                    $source = new Source();
+//                    $source->setServer($this->serverConfig);
+//                    $source->setVidoUrl($videoUrl);
+//                    $source->setState($state);
+//                    $source->setTitle($title);
+//
+//                    $this->movieMatcher->matchMovie($mainMovie, $episode, $source);
+//                }
+//            }
+//        }
+//    }
 
 }

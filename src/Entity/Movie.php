@@ -85,7 +85,8 @@ class Movie
     #[Groups('movie_export')]
     private ?string $videoUrl = null;
 
-    #[ORM\ManyToMany(targetEntity: Category::class)]
+    #[ORM\ManyToMany(targetEntity: Category::class, cascade: ['persist'])]
+    #[MaxDepth(1)]
     #[Groups('movie_export')]
     private Collection $categories;
 
