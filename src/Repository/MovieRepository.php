@@ -31,6 +31,7 @@ class MovieRepository extends ServiceEntityRepository
         $result = $queryBuilder
             ->andWhere('m.mainMovie IS NULL')
             ->andWhere($queryBuilder->expr()->like('m.title', ':title'))
+            ->orWhere($queryBuilder->expr()->like('m.searchContext', ':title'))
             ->setParameter('title', '%' . $movieTitle . '%')
             ->getQuery()
         ->getResult();

@@ -81,7 +81,7 @@ class MyCima implements MovieServerInterface
         // You may need Monolog or Symfony's built-in logger.
         // $this->logger->info("search: " . $query);
 
-        $searchContext = $query;
+
         $multiSearch = false;
         if (!str_contains($query, "http")) {
 //            if (isset($referer) && !empty($referer)) {
@@ -91,16 +91,18 @@ class MyCima implements MovieServerInterface
 //            }
             $query = $this->serverConfig->getWebAddress() . '/search/' . $query;
             $multiSearch = true;
-
+            $searchContext = $query;
+        }else{
+            $searchContext = str_replace($this->serverConfig->getWebAddress(), '', $query);
         }
 
 
-        $movieList = $this->getMovieList($query);
+        $movieList = $this->getMovieList($query, $searchContext);
         if (!$multiSearch){
             return $movieList;
         }
         $query2 = $query . '/list/';
-        $movieList2 = $this->getMovieList($query2);
+        $movieList2 = $this->getMovieList($query2, $searchContext);
         // Once all is done just return the $movieList
         return array_merge($movieList, $movieList2);
     }
@@ -386,7 +388,7 @@ class MyCima implements MovieServerInterface
      * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
      * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
      */
-    public function getMovieList(string $query): array
+    public function getMovieList(string $query, string $searchContext): array
     {
         $movieList = [];
         $response = $this->httpClient->request('GET', $query);
@@ -397,7 +399,7 @@ class MyCima implements MovieServerInterface
             $movieList = [];
 
             // The beauty of Symfony's DomCrawler component is that it can work as a jQuery-like syntax
-            $crawler->filter('.GridItem')->each(function (Crawler $node) use (&$movieList, $query) {
+            $crawler->filter('.GridItem')->each(function (Crawler $node) use (&$movieList, $query, $searchContext) {
                 $linkElem = $node->filter('[href]')->first();
                 if ($linkElem->count() > 0) {
                     $videoUrl = $linkElem->attr('href');
@@ -443,6 +445,7 @@ class MyCima implements MovieServerInterface
                     $movie->setCardImage($image);
                     $movie->setBackgroundImage($image);
                     $movie->setState($state);
+                    $movie->setSearchContext($searchContext);
 //                    $category = new Category();
 //                    $category->setName('general');
 //                    $movie->addCategory($category);

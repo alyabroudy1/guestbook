@@ -146,10 +146,15 @@ class ServersController extends AbstractController
     {
         $result = [];
         if (isset($this->servers[Server::SERVER_MYCIMA])){
-            /** @var MovieServerInterface $server */
-            $server = $this->servers[Server::SERVER_MYCIMA];
-            $result = $server->search($server->getServerConfig()->getWebAddress().'/seriestv/');
-            $this->matcher->matchSearchList($result, $server);
+            $result = $this->getMovieListFromDB('/seriestv/');
+
+            //$movieList = [];
+            if (empty($result)) {
+                /** @var MovieServerInterface $server */
+                $server = $this->servers[Server::SERVER_MYCIMA];
+                $result = $server->search($server->getServerConfig()->getWebAddress().'/seriestv/');
+                $this->matcher->matchSearchList($result, $server);
+            }
         }
         return $result;
     }
