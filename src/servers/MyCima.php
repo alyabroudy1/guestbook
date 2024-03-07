@@ -90,12 +90,15 @@ class MyCima implements MovieServerInterface
 //                $query = $this->websiteUrl . "/search/" . $query;
 //            }
             $query = $this->serverConfig->getWebAddress() . '/search/' . $query;
-//            $multiSearch = true;
+            $multiSearch = true;
 
         }
 
 
         $movieList = $this->getMovieList($query);
+        if (!$multiSearch){
+            return $movieList;
+        }
         $query2 = $query . '/list/';
         $movieList2 = $this->getMovieList($query2);
         // Once all is done just return the $movieList
@@ -440,9 +443,9 @@ class MyCima implements MovieServerInterface
                     $movie->setCardImage($image);
                     $movie->setBackgroundImage($image);
                     $movie->setState($state);
-                    $category = new Category();
-                    $category->setName('general');
-                    $movie->addCategory($category);
+//                    $category = new Category();
+//                    $category->setName('general');
+//                    $movie->addCategory($category);
 
                     $category2 = new Category();
                     $category2->setName('Mycima');

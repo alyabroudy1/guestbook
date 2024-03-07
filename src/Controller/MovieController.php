@@ -63,6 +63,28 @@ class MovieController extends AbstractController
         return JsonResponse::fromJsonString($json);
     }
 
+    /**
+     * Searches for movies based on the provided query.
+     *
+     * @param string $query The search query.
+     * @return JsonResponse The JSON response containing the search results.
+     */
+    #[Route('/homepage', name: 'app_movie_homepage')]
+    public function homepage(): JsonResponse
+    {
+        $movieList = $this->serversController->getHomepageMovies();
+
+//        $data = [
+//            'type' => 'search',
+//            'title' => $query,
+//            'result' => $movieList,
+//        ];
+
+        $json = $this->serialize($movieList);
+
+        return JsonResponse::fromJsonString($json);
+    }
+
     #[Route('/fetch/{id}', name: 'app_movie_fetch_source')]
     public function fetchSource(Source $source): JsonResponse
     {

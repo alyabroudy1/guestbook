@@ -116,9 +116,9 @@ class AkwamTube implements MovieServerInterface
             $movie->setBackgroundImage($cardImage);
             $movie->setState($state);
 
-            $category = new Category();
-            $category->setName('general');
-            $movie->addCategory($category);
+//            $category = new Category();
+//            $category->setName('general');
+//            $movie->addCategory($category);
 
             $category2 = new Category();
             $category2->setName('AkwamTube');

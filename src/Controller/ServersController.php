@@ -142,4 +142,15 @@ class ServersController extends AbstractController
         }
     }
 
+    public function getHomepageMovies()
+    {
+        $result = [];
+        if (isset($this->servers[Server::SERVER_MYCIMA])){
+            /** @var MovieServerInterface $server */
+            $server = $this->servers[Server::SERVER_MYCIMA];
+            $result = $server->search($server->getServerConfig()->getWebAddress().'/seriestv/');
+        }
+        return $result;
+    }
+
 }
