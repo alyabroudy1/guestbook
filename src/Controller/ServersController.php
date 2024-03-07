@@ -33,15 +33,14 @@ class ServersController extends AbstractController
         //todo: try to get the result from database first and if theres no result then fetch it from the net
         //todo: find a way to update database movies something like fetched the last added movies once a day
         //todo:optimize search
-       $movieList = $this->getMovieListFromDB($query);
+       //$movieList = $this->getMovieListFromDB($query);
         //$movieList = [];
         if (empty($movieList)) {
             //search all server and add result to db
-            $this->searchAllServers($query);
+            $movieList =  $this->searchAllServers($query);
             //fetch result again from db
-            $movieList = $this->getMovieListFromDB($query);
+//            $movieList = $this->getMovieListFromDB($query);
         }
-
         return $movieList;
     }
 
@@ -85,6 +84,7 @@ class ServersController extends AbstractController
 
         $this->entityManager->refresh($source->getMovie());;
 
+        dd($source->getMovie()->getSubMovies()->count());
         return $source->getMovie();
     }
 
@@ -133,13 +133,19 @@ class ServersController extends AbstractController
 
     private function searchAllServers($query)
     {
-
+$list = [];
+$counter= 0;
         //todo: doing it using thread or workers for performance
         /** @var MovieServerInterface $server */
         foreach ($this->servers as $server) {
             $result = $server->search($query);
+            $list[] = [
+                'category' => 'server'.$counter++,
+                'movies' => $result
+            ];
             $this->matcher->matchSearchList($result, $server);
         }
+        return $list;
     }
 
 }
