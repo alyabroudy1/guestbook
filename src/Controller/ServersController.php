@@ -68,6 +68,28 @@ class ServersController extends AbstractController
 //        return $movieList;
 //    }
 
+    public function fetchMovie(Movie $movie): Movie
+    {
+
+        /** @var MovieServerInterface $server */
+        $server = $this->servers[$movie->getServer()->getName()];
+
+        if ($movie->getState() === Movie::STATE_ITEM) {
+            return $server->fetchItem($movie);
+        }
+//dd('nope');
+//        /** @var Movie $result */
+//        $result = match ($movie->getState()) {
+//            Movie::STATE_GROUP_OF_GROUP => $server->fetchGroupOfGroup($movie),
+//            Movie::STATE_GROUP => $server->fetchGroup($movie),
+//        };
+
+        $this->entityManager->refresh($movie);;
+
+        return $movie;
+    }
+
+
     public function fetchSource(Source $source): Movie
     {
         /** @var MovieServerInterface $server */
@@ -105,23 +127,23 @@ class ServersController extends AbstractController
         }
         $this->servers[Server::SERVER_AKWAM] = AkwamTube::getInstance($this->httpClient, $akwamTubeServerConfig);
 
-        //myCima
-        //fetch new Server() from db
-        //todo: suggest refactoring
-        $myCimaServerConfig = $this->entityManager->getRepository(Server::class)->findOneBy(['name' => Server::SERVER_MYCIMA]);
-
-        if (!$myCimaServerConfig) {
-            $myCimaServerConfig = new Server();
-            $myCimaServerConfig->setName(Server::SERVER_MYCIMA);
-            $myCimaServerConfig->setWebAddress('https://wemycema.shop');
-            $myCimaServerConfig->setDefaultWebAddress('https://mycima.io');
-            //only the first time if server is not saved to db
-            $myCimaServerConfig->setActive(true);
-            //only the first time if server is not saved to db
-            $this->entityManager->persist($myCimaServerConfig);
-            $this->entityManager->flush();
-        }
-        $this->servers[Server::SERVER_MYCIMA] = MyCima::getInstance($this->httpClient, $myCimaServerConfig, $this->matcher);
+//        //myCima
+//        //fetch new Server() from db
+//        //todo: suggest refactoring
+//        $myCimaServerConfig = $this->entityManager->getRepository(Server::class)->findOneBy(['name' => Server::SERVER_MYCIMA]);
+//
+//        if (!$myCimaServerConfig) {
+//            $myCimaServerConfig = new Server();
+//            $myCimaServerConfig->setName(Server::SERVER_MYCIMA);
+//            $myCimaServerConfig->setWebAddress('https://wemycema.shop');
+//            $myCimaServerConfig->setDefaultWebAddress('https://mycima.io');
+//            //only the first time if server is not saved to db
+//            $myCimaServerConfig->setActive(true);
+//            //only the first time if server is not saved to db
+//            $this->entityManager->persist($myCimaServerConfig);
+//            $this->entityManager->flush();
+//        }
+//        $this->servers[Server::SERVER_MYCIMA] = MyCima::getInstance($this->httpClient, $myCimaServerConfig, $this->matcher);
 
         //todo: other server ...
     }

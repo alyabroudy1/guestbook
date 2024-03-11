@@ -69,8 +69,6 @@ class Movie
     private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\OneToMany(mappedBy: 'movie', targetEntity: Source::class, cascade: ['remove', 'persist'])]
-    #[Groups('movie_export')]
-    #[MaxDepth(1)]
     private Collection $sources;
 
     #[ORM\ManyToOne(targetEntity: Movie::class, inversedBy: 'subMovies')]
@@ -92,6 +90,15 @@ class Movie
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $searchContext = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups('movie_export')]
+    private ?string $serverUrl = null;
+
+    #[ORM\ManyToOne]
+    #[Groups('movie_export')]
+    #[MaxDepth(1)]
+    private ?Server $server = null;
 
     public function __construct()
     {
@@ -328,6 +335,8 @@ class Movie
             $clone->mainMovie = clone $this->mainMovie;
         }
 
+        $clone->server = clone $this->server;
+        $clone->serverUrl = $this->serverUrl;
         // For the subMovies collection, you'll need to clone each item
         if ($withSubMovie) {
             foreach ($this->subMovies as $subMovie) {
@@ -387,4 +396,23 @@ class Movie
         return $this;
     }
 
+    public function getServerUrl(): ?string
+    {
+        return $this->serverUrl;
+    }
+
+    public function setServerUrl(?string $serverUrl): void
+    {
+        $this->serverUrl = $serverUrl;
+    }
+
+    public function getServer(): ?Server
+    {
+        return $this->server;
+    }
+
+    public function setServer(?Server $server): void
+    {
+        $this->server = $server;
+    }
 }

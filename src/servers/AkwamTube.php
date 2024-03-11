@@ -103,8 +103,10 @@ class AkwamTube implements MovieServerInterface
                 }
             }
 
+            $serverWebName = $this->serverConfig->getWebAddress();
             if (preg_match('~https?://([^/]+)(/.*)~', $videoUrl, $matches)) {
                 if (count($matches) > 1) {
+                    $serverWebName = $matches[1];
                     $videoUrl = $matches[2];
                 }
             }
@@ -115,6 +117,8 @@ class AkwamTube implements MovieServerInterface
             $movie->setCardImage($cardImage);
             $movie->setBackgroundImage($cardImage);
             $movie->setState($state);
+            $movie->setVideoUrl($videoUrl);
+            $movie->setServerUrl($serverWebName);
 
 //            $category = new Category();
 //            $category->setName('general');
@@ -123,14 +127,15 @@ class AkwamTube implements MovieServerInterface
             $category2 = new Category();
             $category2->setName('AkwamTube');
             $movie->addCategory($category2);
+            $movie->setServer($this->getServerConfig());
 
-            $source = new Source();
-            $source->setServer($this->serverConfig);
-            $source->setVidoUrl($videoUrl);
-            $source->setState($state);
-            $source->setTitle($title);
-
-            $movie->addSource($source);
+//            $source = new Source();
+//            $source->setServer($this->serverConfig);
+//            $source->setVidoUrl($videoUrl);
+//            $source->setState($state);
+//            $source->setTitle($title);
+//
+//            $movie->addSource($source);
 
             $movieList[] = $movie;
         });
@@ -197,9 +202,9 @@ class AkwamTube implements MovieServerInterface
 //        // TODO: Implement fetchMovie() method.
 //    }
 
-    public function fetchItem(Source $source): Movie
+    public function fetchItem(Movie $movie): Movie
     {
-        $url = $this->serverConfig->getWebAddress() . $source->getVidoUrl();
+        $url = $this->serverConfig->getWebAddress() . $movie->getVideoUrl();
 
         $response = $this->httpClient->request('GET', $url);
         $content = $response->getContent();
@@ -209,8 +214,7 @@ class AkwamTube implements MovieServerInterface
         $crawler = new Crawler($content);
 
         $videoGridElements = $crawler->filter('#play-video');
-        $mainMovie = $source->getMovie();
-        $mov = $mainMovie->cloneMovie();
+
         if ($videoGridElements->count() > 0) {
             $href = $videoGridElements->attr('href');
             if ($href !== null){
@@ -232,25 +236,32 @@ class AkwamTube implements MovieServerInterface
                     ];
                 });
 
-                $mov->setMainMovie($mainMovie);
-                $mov->setState(Movie::STATE_BROWSE);
                 foreach ($elements as $linkArray){
-                    $source = new Source();
-                    $source->setMovie($mov);
-                    $source->setServer($this->serverConfig);
-                    $source->setState(Movie::STATE_BROWSE);
-                    $source->setTitle($linkArray['title']);
+                    $subMovie = $movie->cloneMovie();
+                    $subMovie->setMainMovie($movie);
+                    $subMovie->setState(Movie::STATE_BROWSE);
+                    $subMovie->setTitle($linkArray['title']);
+
+                    $serverWebNameUrl = $this->extractDomainfromUrl($linkArray['url']);
                     $referer = $this->extractDomainfromUrl($realUrl) . '/';
                     $finalUrl = $linkArray['url'] . Movie::URL_DELIMITER .'referer='.$referer;
-                    $source->setVidoUrl($finalUrl);
-                    $mov->addSource($source);
+                    $subMovie->setVideoUrl($finalUrl);
+                    $subMovie->setServerUrl($serverWebNameUrl);
+
+//                    $source = new Source();
+//                    $source->setMovie($mov);
+//                    $source->setServer($this->serverConfig);
+//                    $source->setState(Movie::STATE_BROWSE);
+//                    $source->setTitle($linkArray['title']);
+//                    $source->setVidoUrl($finalUrl);
+//                    $mov->addSource($source);
+                    $movie->addSubMovie($subMovie);
                 }
 
             }
         }
         //todo update server webaddress in db from $realUrl
-        return $mov;
-
+        return $movie;
     }
     public function fetchSource(Source $source): Movie
     {

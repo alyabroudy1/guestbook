@@ -86,11 +86,11 @@ class MovieController extends AbstractController
     }
 
     #[Route('/fetch/{id}', name: 'app_movie_fetch_source')]
-    public function fetchSource(Source $source): JsonResponse
+    public function fetchMovie(Movie $movie): JsonResponse
     {
         //todo: check incoming movie state
         //if available in db the next state return it or fetch it and return it
-        $result = $this->serversController->fetchSource($source);
+        $result = $this->serversController->fetchMovie($movie);
 
         $json = $this->serialize([$result]);
 
