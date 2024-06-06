@@ -21,6 +21,7 @@ abstract class Movie
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups('movie_export')]
     private ?int $id = null;
 
     public final const STATE_GROUP_OF_GROUP = 0;
@@ -70,6 +71,8 @@ abstract class Movie
     private ?\DateTimeImmutable $updatedAt;
 
     #[ORM\OneToOne(mappedBy: 'movie', targetEntity: Link::class, cascade: ['remove', 'persist'])]
+    #[MaxDepth(1)]
+    #[Groups('movie_export')]
     private Link $link;
 
     #[ORM\ManyToMany(targetEntity: Category::class, cascade: ['persist'])]

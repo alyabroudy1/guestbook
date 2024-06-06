@@ -39,8 +39,9 @@ class ServersController extends AbstractController
         //todo: try to get the result from database first and if theres no result then fetch it from the net
         //todo: find a way to update database movies something like fetched the last added movies once a day
         //todo:optimize search
-//       $movieList = $this->getMovieListFromDB($query);
-        $movieList = [];
+       $movieList = $this->getMovieListFromDB($query);
+       dump('getMovieListFromDB: ' . count($movieList));
+//        $movieList = [];
         if (empty($movieList)) {
             //search all server and add result to db
             $this->searchAllServers($query);
@@ -166,7 +167,7 @@ dd('nope');
 
     private function getMovieListFromDB($query)
     {
-        return $this->entityManager->getRepository(Movie::class)->findMainMoviesByTitleLoose($query);
+        return $this->entityManager->getRepository(Movie::class)->findMoviesByTitleLoose($query);
     }
 
     private function searchAllServers($query)
@@ -177,26 +178,26 @@ dd('nope');
         foreach ($this->servers as $server) {
             $result = $server->search($query);
             $this->matcher->matchSearchList($result, $server);
-            dd('searchAllServers: ' . $server->getConfig()->getModel()->name,
-                $result);
+//            dd('searchAllServers: ' . $server->getConfig()->getModel()->name,
+//                $result);
         }
     }
 
     public function getHomepageMovies()
     {
         $result = [];
-        if (isset($this->servers[Server::SERVER_MYCIMA])){
-            $result = $this->getMovieListFromDB('/seriestv/');
-
-            //$movieList = [];
-            if (empty($result)) {
-                /** @var MovieServerInterface $server */
-                $server = $this->servers[Server::SERVER_MYCIMA];
-                $result = $server->search($server->getServerConfig()->getAuthority().'/seriestv/');
-                $this->matcher->matchSearchList($result, $server);
-            }
-        }
-        return $result;
+//        if (isset($this->servers[Server::SERVER_MYCIMA])){
+//            $result = $this->getMovieListFromDB('/seriestv/');
+//
+//            //$movieList = [];
+//            if (empty($result)) {
+//                /** @var MovieServerInterface $server */
+//                $server = $this->servers[Server::SERVER_MYCIMA];
+//                $result = $server->search($server->getServerConfig()->getAuthority().'/seriestv/');
+//                $this->matcher->matchSearchList($result, $server);
+//            }
+//        }
+        return $this->entityManager->getRepository(Movie::class)->findLastThirtyMovies();
     }
 
 }

@@ -12,6 +12,7 @@ class Link
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups('movie_export')]
     private ?int $id = null;
 
     #[ORM\Column(length: 255, nullable: true)]

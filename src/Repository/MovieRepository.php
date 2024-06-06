@@ -27,12 +27,11 @@ class MovieRepository extends ServiceEntityRepository
     /**
          * @return Movie[] Returns an array of Movie objects
          */
-    public function findMainMoviesByTitleLoose($movieTitle): array
+    public function findMoviesByTitleLoose($movieTitle): array
     {
 
         $queryBuilder = $this->createQueryBuilder('m');
         $result = $queryBuilder
-            ->andWhere('m.mainMovie IS NULL')
             ->andWhere($queryBuilder->expr()->like('m.title', ':title'))
             ->orWhere($queryBuilder->expr()->like('m.searchContext', ':title'))
             ->setParameter('title', '%' . $movieTitle . '%')
@@ -88,5 +87,16 @@ return $result;
             ->getQuery()
             ->getResult()
             ;
+    }
+
+    public function findLastThirtyMovies()
+    {
+        $result = $this->createQueryBuilder('m')
+            ->orderBy('m.id', 'DESC') // Order by ID descending (less ideal)
+            ->setMaxResults(30)
+        ->getQuery()
+        ->getResult();
+
+        return $result;
     }
 }
