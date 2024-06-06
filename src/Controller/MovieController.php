@@ -123,8 +123,18 @@ class MovieController extends AbstractController
                   //  if ($object instanceof Movie)
                         return $object->getId();
                 },
+                AbstractNormalizer::CALLBACKS => [
+                    'type' => function ($object) {
+                        // Get the class name without the namespace
+//                        $className = (new \ReflectionClass($object))->getShortName();
+//                        // Convert the class name into the corresponding MovieType value
+//                        return constant("App\\Enum\\MovieType::$className");
+                        return $object->value;
+                    },
+                ],
             ]
         );
+
         return $json;
     }
 
