@@ -93,7 +93,7 @@ class MovieController extends AbstractController
         //if available in db the next state return it or fetch it and return it
         $result = $this->serversController->fetchMovie($movie);
 
-        $json = $this->serialize([$result]);
+        $json = $this->serialize($result);
 
         return JsonResponse::fromJsonString($json);
     }
