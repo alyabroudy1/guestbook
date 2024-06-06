@@ -9,6 +9,9 @@
 /vendor/
 ###< symfony/framework-bundle ###
 
+
+.idea/
+.ddev/
 ###> phpunit/phpunit ###
 /phpunit.xml
 .phpunit.result.cache

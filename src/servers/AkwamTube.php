@@ -4,15 +4,30 @@ namespace App\servers;
 
 use App\Controller\MovieController;
 use App\Entity\Category;
+use App\Entity\Dto\HtmlMovieDto;
+use App\Entity\Film;
+use App\Entity\Link;
+use App\Entity\LinkState;
 use App\Entity\Movie;
+use App\Entity\MovieType;
+use App\Entity\Season;
+use App\Entity\Series;
 use App\Entity\Server;
 use App\Entity\Source;
 use Doctrine\Common\Collections\ArrayCollection;
+use phpDocumentor\Reflection\Types\This;
+use PHPUnit\Exception;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Routing\Generator\UrlGenerator;
+use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Contracts\HttpClient\ResponseInterface;
 
-class AkwamTube implements MovieServerInterface
+class AkwamTube extends AbstractServer
 {
 
     private ?int $id = null;
@@ -29,53 +44,63 @@ class AkwamTube implements MovieServerInterface
         }
        return $instance;
     }
+    public function getConfig(): Server{
+        return $this->serverConfig;
+    }
 
-
-    public function search_test($query): array{
-
-        $movieList = [];
-
-        $mainMovie1 = new Movie();
-        $mainMovie1->setTitle("ratched-series 2");
-        $mainMovie1->setState(Movie::STATE_GROUP_OF_GROUP);
-
-        $source1 = new Source();
-        $source1->setState(Movie::STATE_GROUP_OF_GROUP);
-        $source1->setServer($this->serverConfig);
-        $source1->setVidoUrl("ratcheds series 2");
-        $mainMovie1->addSource($source1);
-
-
-
-
+//    public function search_test($query): array{
+//
+//        $movieList = [];
+//
 //        $mainMovie1 = new Movie();
-//        $mainMovie1->setTitle("ratched sub1");
-//        $mainMovie1->setState(Movie::STATE_GROUP);
+//        $mainMovie1->setTitle("ratched-series 2");
+//        $mainMovie1->setState(Movie::STATE_GROUP_OF_GROUP);
 //
 //        $source1 = new Source();
-//        $source1->setState(Movie::STATE_ITEM);
+//        $source1->setState(Movie::STATE_GROUP_OF_GROUP);
 //        $source1->setServer($this->serverConfig);
-//        $source1->setVidoUrl("ratcheds1s1");
+//        $source1->setVidoUrl("ratcheds series 2");
 //        $mainMovie1->addSource($source1);
-
-//        $mainMovie2 = new Movie();
-//        $mainMovie2->setTitle("ss ratched s2");
 //
-//        $source2 = new Source();
-//        $source2->setState(Movie::STATE_ITEM);
-//        $source2->setServer($this->serverConfig);
-//        $source2->setVidoUrl("ratcheds2");
-//        $mainMovie2->addSource($source2);
+//
+//
+//
+////        $mainMovie1 = new Movie();
+////        $mainMovie1->setTitle("ratched sub1");
+////        $mainMovie1->setState(Movie::STATE_GROUP);
+////
+////        $source1 = new Source();
+////        $source1->setState(Movie::STATE_ITEM);
+////        $source1->setServer($this->serverConfig);
+////        $source1->setVidoUrl("ratcheds1s1");
+////        $mainMovie1->addSource($source1);
+//
+////        $mainMovie2 = new Movie();
+////        $mainMovie2->setTitle("ss ratched s2");
+////
+////        $source2 = new Source();
+////        $source2->setState(Movie::STATE_ITEM);
+////        $source2->setServer($this->serverConfig);
+////        $source2->setVidoUrl("ratcheds2");
+////        $mainMovie2->addSource($source2);
+//
+//        $movieList[] = $mainMovie1;
+//   //     $movieList[] = $mainMovie2;
+//
+//        return $movieList;
+//    }
 
-        $movieList[] = $mainMovie1;
-   //     $movieList[] = $mainMovie2;
-
-        return $movieList;
+    protected function getSearchUrlQuery(): string{
+        return '/?s=';
     }
-    public function search($query): array
-    {
-        $webAddress= $this->serverConfig->getWebAddress();
-        $response = $this->httpClient->request('GET', $webAddress . '/?s=' . $query);
+
+    /**
+     * @throws TransportExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ClientExceptionInterface
+     */
+    protected function generateSearchResult(ResponseInterface $response): array{
         $content = $response->getContent();
 
         // Assuming $content contains your HTML response
@@ -95,52 +120,24 @@ class AkwamTube implements MovieServerInterface
             $cardImageElement = $videoGrid->filter('div.thumb a img');
             $cardImage = $cardImageElement->attr('data-src');
             $title = $cardImageElement->attr('alt');
-            if (preg_match('~https?://([^/]+)(/.*)~', $cardImage, $imageMatches)) {
-                if (count($imageMatches) > 1){
-                    if ($imageMatches[1] === $this->serverConfig->getWebAddress()){
-                        $cardImage = $imageMatches[2];
-                    }
-                }
-            }
 
-            $serverWebName = $this->serverConfig->getWebAddress();
-            if (preg_match('~https?://([^/]+)(/.*)~', $videoUrl, $matches)) {
-                if (count($matches) > 1) {
-                    $serverWebName = $matches[1];
-                    $videoUrl = $matches[2];
-                }
-            }
-            $state = $this->isSeries($title, $videoUrl) ? Movie::STATE_GROUP_OF_GROUP : Movie::STATE_ITEM;
+            $cardImage = $this->generateValidLinkPath($cardImage);
+            $videoUrl = $this->generateValidLinkPath($videoUrl);
 
-            $movie = new Movie();  // Instance of your Movie class containing methods like setTitle, setVideoUrl, etc.
-            $movie->setTitle($title);
-            $movie->setCardImage($cardImage);
-            $movie->setBackgroundImage($cardImage);
-            $movie->setState($state);
-            $movie->setVideoUrl($videoUrl);
-            $movie->setServerUrl($serverWebName);
-
-//            $category = new Category();
-//            $category->setName('general');
-//            $movie->addCategory($category);
-
-            $category2 = new Category();
-            $category2->setName('AkwamTube');
-            $movie->addCategory($category2);
-            $movie->setServer($this->getServerConfig());
-
-//            $source = new Source();
-//            $source->setServer($this->serverConfig);
-//            $source->setVidoUrl($videoUrl);
-//            $source->setState($state);
-//            $source->setTitle($title);
-//
-//            $movie->addSource($source);
+            $htmlMovieDto = new HtmlMovieDto($this->generateCleanTitle($title), $videoUrl, '', $cardImage, '');
+            $movie = $this->generateSearchMovie($htmlMovieDto);
 
             $movieList[] = $movie;
         });
         return $movieList;
-        //return $this->search_test($query);
+    }
+
+    protected function getMovieType(HtmlMovieDto $htmlMovieDto): ?MovieType
+    {
+        if ($this->isSeries($htmlMovieDto->title, $htmlMovieDto->videoUrl)){
+            return MovieType::Series;
+        }
+        return MovieType::Film;
     }
 
     public function isSeries($title, $videoUrl): bool
@@ -158,27 +155,11 @@ class AkwamTube implements MovieServerInterface
         return $this->id;
     }
 
-    public function setId(?int $id): void
-    {
-        $this->id = $id;
-    }
-
     private function init()
     {
         //todo: set cookie, headers and other stuff
         //$this->serverConfig->setName('Akwam'); // fetch id from serverConfig
     }
-
-    public function getServerConfig(): Server
-    {
-        return $this->serverConfig;
-    }
-
-    public function setServerConfig(Server $serverConfig): void
-    {
-        $this->serverConfig = $serverConfig;
-    }
-
 
 //    public function fetchMovie(Movie $movie): Movie
 //    {
@@ -202,32 +183,39 @@ class AkwamTube implements MovieServerInterface
 //        // TODO: Implement fetchMovie() method.
 //    }
 
-    public function fetchItem(Movie $movie): Movie
-    {
-        $url = $this->serverConfig->getWebAddress() . $movie->getVideoUrl();
-
-        $response = $this->httpClient->request('GET', $url);
-        $content = $response->getContent();
-        $realUrl = $response->getInfo('url');
-
+    /**
+     * @param ResponseInterface $response
+     * @param Movie $movie
+     * @return Link[]
+     * @throws ClientExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     */
+    protected function generateResolutions(ResponseInterface $response, Movie $movie): array{
         // Assuming $content contains your HTML response
+        $content = $response->getContent();
         $crawler = new Crawler($content);
+
 
         $videoGridElements = $crawler->filter('#play-video');
 
+        $resolutions = [];
+
         if ($videoGridElements->count() > 0) {
+            $referer = $this->getConfig()->getAuthority() . '/';
             $href = $videoGridElements->attr('href');
             if ($href !== null){
                 $href = str_replace('rand&', '', $href);
                 if (str_starts_with($href, '/')){
                     $href = 'https:' . $href;
                 }
-                $response = $this->httpClient->request('GET', $href, [
+                $response2 = $this->httpClient->request('GET', $href, [
                     'headers' => [
-                        'referer' => $url
+                        'referer' => $this->getConfig()->getAuthority() . '/'
                     ]
                 ]);
-                $content2 = $response->getContent();
+                $content2 = $response2->getContent();
                 $crawler2 = new Crawler($content2);
                 $elements = $crawler2->filter('.embeding ul li a')->each(function (Crawler $node) {
                     return [
@@ -237,53 +225,28 @@ class AkwamTube implements MovieServerInterface
                 });
 
                 foreach ($elements as $linkArray){
-                    $subMovie = $movie->cloneMovie();
-                    $subMovie->setMainMovie($movie);
-                    $subMovie->setState(Movie::STATE_BROWSE);
-                    $subMovie->setTitle($linkArray['title']);
+//                    $referer = $this->extractDomainfromUrl($realUrl) . '/';
 
-                    $serverWebNameUrl = $this->extractDomainfromUrl($linkArray['url']);
-                    $referer = $this->extractDomainfromUrl($realUrl) . '/';
                     $finalUrl = $linkArray['url'] . Movie::URL_DELIMITER .'referer='.$referer;
-                    $subMovie->setVideoUrl($finalUrl);
-                    $subMovie->setServerUrl($serverWebNameUrl);
-
-//                    $source = new Source();
-//                    $source->setMovie($mov);
-//                    $source->setServer($this->serverConfig);
-//                    $source->setState(Movie::STATE_BROWSE);
-//                    $source->setTitle($linkArray['title']);
-//                    $source->setVidoUrl($finalUrl);
-//                    $mov->addSource($source);
-                    $movie->addSubMovie($subMovie);
+                    $link = new Link();
+                    $link->setUrl($finalUrl);
+                    $link->setTitle($linkArray['title']);
+                    $link->setServer($this->getConfig());
+                    $link->setSplittable(false);
+                    $link->setState(LinkState::Browse);
+                    $link->setMovie($movie);
+                    $resolutions[] = $link;
                 }
 
             }
         }
-        //todo update server webaddress in db from $realUrl
-        return $movie;
-    }
-    public function fetchSource(Source $source): Movie
-    {
-        return $source->getMovie();
+
+        return $resolutions;
     }
 
-    function extractDomainfromUrl($videoUrl) {
-        if (preg_match('~(https?://[^/]+)(/.*)~', $videoUrl, $matches)) {
-            if (count($matches) > 1) {
-                $videoUrl = $matches[1];
-            }
-        }
-        return $videoUrl;
-    }
 
-    public function fetchGroupOfGroup(Source $source)
+    protected function getHttpClient(): HttpClientInterface
     {
-        // TODO: Implement fetchGroupOfGroup() method.
-    }
-
-    public function fetchGroup(Source $source)
-    {
-        // TODO: Implement fetchGroup() method.
+        return $this->httpClient;
     }
 }

@@ -56,23 +56,25 @@ class MovieMatcher
         return null;
     }
 
-    public function matchSearchList(array $result, MovieServerInterface $server)
+    public function matchSearchList(array $result, AbstractServer $server)
     {
         foreach ($result as $movie){
             /** @var Movie $existingMovie */
             $existingMovie = $this->getExistingMovie($movie);
             if ($existingMovie){
-                $newSources = $this->findNewSources($existingMovie, $movie);
-                foreach ($newSources as $nSource){
-                    $existingMovie->getSources()->add($nSource);
-                    $this->entityManager->persist($nSource);
-                }
+                dump('matchSearchList: existingMovie');
+//                $newSources = $this->findNewSources($existingMovie, $movie);
+//                foreach ($newSources as $nSource){
+//                    $existingMovie->getSources()->add($nSource);
+//                    $this->entityManager->persist($nSource);
+//                }
             }else{
+                dump('matchSearchList: new Movie');
                 $title = $this->getCleanTitle($movie->getTitle());
                 $movie->setTitle($title);
-                if ($movie->getSources()->first()) {
-                    $this->entityManager->persist($movie->getSources()->first());
-                }
+//                if ($movie->getSources()->first()) {
+//                    $this->entityManager->persist($movie->getSources()->first());
+//                }
 
                 $this->entityManager->persist($movie);
                 $this->entityManager->flush();
@@ -83,8 +85,8 @@ class MovieMatcher
     private function getExistingMovie(Movie $movie)
     {
         $title = $this->getCleanTitle($movie->getTitle());
-        $result = $this->entityManager->getRepository(Movie::class)->findByTitleAndState($title, $movie->getState());
-        //dump('getExistingMovie result', $result);
+        $result = $this->entityManager->getRepository(Movie::class)->findByTitleAndType($title, $movie->getType());
+        dump('getExistingMovie result', $result);
         $matchedMovie = null;
 
         if (count($result) > 0) {

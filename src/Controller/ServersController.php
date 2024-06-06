@@ -2,9 +2,14 @@
 
 namespace App\Controller;
 
+use App\Entity\Film;
+use App\Entity\Link;
+use App\Entity\LinkState;
 use App\Entity\Movie;
 use App\Entity\Server;
+use App\Entity\ServerModel;
 use App\Entity\Source;
+use App\servers\AbstractServer;
 use App\servers\AkwamTube;
 use App\servers\MovieMatcher;
 use App\servers\MovieServerInterface;
@@ -16,6 +21,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class ServersController extends AbstractController
@@ -33,8 +39,8 @@ class ServersController extends AbstractController
         //todo: try to get the result from database first and if theres no result then fetch it from the net
         //todo: find a way to update database movies something like fetched the last added movies once a day
         //todo:optimize search
-       $movieList = $this->getMovieListFromDB($query);
-        //$movieList = [];
+//       $movieList = $this->getMovieListFromDB($query);
+        $movieList = [];
         if (empty($movieList)) {
             //search all server and add result to db
             $this->searchAllServers($query);
@@ -68,16 +74,22 @@ class ServersController extends AbstractController
 //        return $movieList;
 //    }
 
-    public function fetchMovie(Movie $movie): Movie
+    /**
+     * @param Movie $movie
+     * @return Link[]
+     * @throws TransportExceptionInterface
+     */
+    public function fetchMovie(Movie $movie): array
     {
 
-        /** @var MovieServerInterface $server */
-        $server = $this->servers[$movie->getServer()->getName()];
+        $link = $movie->getLink();
+        /** @var AbstractServer $server */
+        $server = $this->servers[$link->getServer()->getModel()->name];
 
-        if ($movie->getState() === Movie::STATE_ITEM) {
+        if ($movie instanceof Film) {
             return $server->fetchItem($movie);
         }
-//dd('nope');
+dd('nope');
 //        /** @var Movie $result */
 //        $result = match ($movie->getState()) {
 //            Movie::STATE_GROUP_OF_GROUP => $server->fetchGroupOfGroup($movie),
@@ -115,17 +127,21 @@ class ServersController extends AbstractController
         //akwamTube
         //fetch new Server() from db
         //todo: suggest refactoring
-        $akwamTubeServerConfig = $this->entityManager->getRepository(Server::class)->findOneBy(['name' => Server::SERVER_AKWAM]);
+        $akwamTubeServerConfig = $this->entityManager->getRepository(Server::class)->findOneByModel(ServerModel::AkwamTube);
+//        dd($akwamTubeServerConfig, empty($akwamTubeServerConfig));
+        //        $akwamTubeServerConfig = [];
         if (empty($akwamTubeServerConfig)) {
             $akwamTubeServerConfig = new Server();
             $akwamTubeServerConfig->setName(Server::SERVER_AKWAM);
-            $akwamTubeServerConfig->setWebAddress('https://i.akwam.tube');
+            $akwamTubeServerConfig->setModel(ServerModel::AkwamTube);
+            $akwamTubeServerConfig->setAuthority('https://i.akwam.tube');
+            $akwamTubeServerConfig->setDefaultAuthority('https://i.akwam.tube');
             $akwamTubeServerConfig->setActive(true);
             //only the first time if server is not saved to db
             $this->entityManager->persist($akwamTubeServerConfig);
             $this->entityManager->flush();
         }
-        $this->servers[Server::SERVER_AKWAM] = AkwamTube::getInstance($this->httpClient, $akwamTubeServerConfig);
+        $this->servers[ServerModel::AkwamTube->name] = AkwamTube::getInstance($this->httpClient, $akwamTubeServerConfig[0]);
 
 //        //myCima
 //        //fetch new Server() from db
@@ -157,10 +173,12 @@ class ServersController extends AbstractController
     {
 
         //todo: doing it using thread or workers for performance
-        /** @var MovieServerInterface $server */
+        /** @var AbstractServer $server */
         foreach ($this->servers as $server) {
             $result = $server->search($query);
             $this->matcher->matchSearchList($result, $server);
+            dd('searchAllServers: ' . $server->getConfig()->getModel()->name,
+                $result);
         }
     }
 
@@ -174,7 +192,7 @@ class ServersController extends AbstractController
             if (empty($result)) {
                 /** @var MovieServerInterface $server */
                 $server = $this->servers[Server::SERVER_MYCIMA];
-                $result = $server->search($server->getServerConfig()->getWebAddress().'/seriestv/');
+                $result = $server->search($server->getServerConfig()->getAuthority().'/seriestv/');
                 $this->matcher->matchSearchList($result, $server);
             }
         }

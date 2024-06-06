@@ -31,7 +31,7 @@ class Server
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups('movie_export')]
-    private ?string $webAddress = null;
+    private ?string $authority = null;
 
     #[ORM\Column(type: Types::SMALLINT, nullable: true)]
     private ?int $rate = null;
@@ -40,7 +40,10 @@ class Server
     private ?bool $active = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    private ?string $defaultWebAddress = null;
+    private ?string $defaultAuthority = null;
+
+    #[ORM\Column(type: 'string', unique: true, nullable: true, enumType: ServerModel::class)]
+    private ?ServerModel $model = null;
 
     public function getId(): ?int
     {
@@ -83,14 +86,14 @@ class Server
         return $this;
     }
 
-    public function getWebAddress(): ?string
+    public function getAuthority(): ?string
     {
-        return $this->webAddress;
+        return $this->authority;
     }
 
-    public function setWebAddress(?string $webAddress): static
+    public function setAuthority(?string $authority): static
     {
-        $this->webAddress = $webAddress;
+        $this->authority = $authority;
 
         return $this;
     }
@@ -119,14 +122,26 @@ class Server
         return $this;
     }
 
-    public function getDefaultWebAddress(): ?string
+    public function getDefaultAuthority(): ?string
     {
-        return $this->defaultWebAddress;
+        return $this->defaultAuthority;
     }
 
-    public function setDefaultWebAddress(?string $defaultWebAddress): static
+    public function setDefaultAuthority(?string $defaultAuthority): static
     {
-        $this->defaultWebAddress = $defaultWebAddress;
+        $this->defaultAuthority = $defaultAuthority;
+
+        return $this;
+    }
+
+    public function getModel(): ?ServerModel
+    {
+        return $this->model;
+    }
+
+    public function setModel(?ServerModel $model): static
+    {
+        $this->model = $model;
 
         return $this;
     }

@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Film;
 use App\Entity\Movie;
 
 use App\Entity\Source;

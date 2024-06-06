@@ -2,8 +2,11 @@
 
 namespace App\Repository;
 
+use App\Entity\Film;
 use App\Entity\Movie;
+use App\Entity\MovieType;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Query\ResultSetMapping;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -62,17 +65,18 @@ return $result;
 //            ->getOneOrNullResult()
 //        ;
 //    }
-    public function findByTitleAndState(?string $movieTitle, ?int $state)
+    public function findByTitleAndType(?string $movieTitle, ?MovieType $movieType)
     {
+
         $queryBuilder = $this->createQueryBuilder('m');
+
         return $queryBuilder
-            ->andWhere('m.state = :state')
-            ->setParameter('state', $state)
+            ->andWhere('m INSTANCE OF :movieType') // Use INSTANCE OF for type comparison
+            ->setParameter('movieType', $movieType)
             ->andWhere($queryBuilder->expr()->like('m.title', ':title'))
             ->setParameter('title', '%' . $movieTitle . '%')
             ->getQuery()
-            ->getResult()
-            ;
+            ->getResult();
     }
 
     public function findSubMovies(Movie $movie)

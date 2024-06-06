@@ -89,11 +89,11 @@ class MyCima implements MovieServerInterface
 //            } else {
 //                $query = $this->websiteUrl . "/search/" . $query;
 //            }
-            $query = $this->serverConfig->getWebAddress() . '/search/' . $query;
+            $query = $this->serverConfig->getAuthority() . '/search/' . $query;
             $multiSearch = true;
             $searchContext = $query;
         }else{
-            $searchContext = str_replace($this->serverConfig->getWebAddress(), '', $query);
+            $searchContext = str_replace($this->serverConfig->getAuthority(), '', $query);
         }
 
 
@@ -154,7 +154,7 @@ class MyCima implements MovieServerInterface
 
     public function fetchItem(Source $source): Movie
     {
-        $movieUrl = $source->getServer()->getWebAddress() . $source->getVidoUrl();
+        $movieUrl = $source->getServer()->getAuthority() . $source->getVidoUrl();
         $mainMovie = $source->getMovie();
         $movie = $mainMovie->cloneMovie();
         $movie->setMainMovie($mainMovie);
@@ -252,7 +252,7 @@ class MyCima implements MovieServerInterface
 
     public function fetchGroupOfGroup(Source $source): Movie
     {
-        $movieUrl = $source->getServer()->getWebAddress() . $source->getVidoUrl();
+        $movieUrl = $source->getServer()->getAuthority() . $source->getVidoUrl();
         $mainMovie = $source->getMovie();
 
         try {
@@ -322,7 +322,7 @@ class MyCima implements MovieServerInterface
 
     public function fetchGroup(Source $source)
     {
-        $movieUrl = $source->getServer()->getWebAddress() . $source->getVidoUrl();
+        $movieUrl = $source->getServer()->getAuthority() . $source->getVidoUrl();
         $mainMovie = $source->getMovie();
 
         try {
@@ -424,7 +424,7 @@ class MyCima implements MovieServerInterface
 
                     if (preg_match('~(https?://[^/]+)(/.*)~', $image, $imageMatches)) {
                         if (count($imageMatches) > 1) {
-                            if ($imageMatches[1] === $this->serverConfig->getWebAddress()) {
+                            if ($imageMatches[1] === $this->serverConfig->getAuthority()) {
                                 $image = $imageMatches[2];
                             }
                         }
