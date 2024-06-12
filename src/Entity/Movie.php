@@ -167,7 +167,7 @@ abstract class Movie
         return $this->totalTime;
     }
 
-    public function setTotalTime(int $totalTime): static
+    public function setTotalTime(?int $totalTime): static
     {
         $this->totalTime = $totalTime;
 

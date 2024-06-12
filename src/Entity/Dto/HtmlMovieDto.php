@@ -2,6 +2,8 @@
 
 namespace App\Entity\Dto;
 
+use App\Entity\Movie;
+
 class HtmlMovieDto
 {
 
@@ -11,7 +13,8 @@ class HtmlMovieDto
     public string $videoUrl,
     public string $description,
     public string $cardImage,
-    public string $rate
+    public string $rate,
+    public ?Movie $mainMovie = null
     )
     {
     }

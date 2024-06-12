@@ -24,8 +24,8 @@ class Server
     #[Groups('movie_export')]
     private ?string $name = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
-    private ?string $headers = null;
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $headers = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $cookie = null;
@@ -63,12 +63,12 @@ class Server
         return $this;
     }
 
-    public function getHeaders(): ?string
+    public function getHeaders(): ?array
     {
         return $this->headers;
     }
 
-    public function setHeaders(?string $headers): static
+    public function setHeaders(?array $headers): static
     {
         $this->headers = $headers;
 

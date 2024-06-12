@@ -7,6 +7,8 @@ use App\Entity\Movie;
 
 use App\Entity\Source;
 
+use App\Service\ChromeService;
+use App\Service\CookieFinderService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -87,8 +89,12 @@ class MovieController extends AbstractController
     }
 
     #[Route('/fetch/{id}', name: 'app_movie_fetch_source')]
-    public function fetchMovie(Movie $movie): JsonResponse
+//    public function fetchMovie(Movie $movie, ChromeService $chromeService): JsonResponse
+    public function fetchMovie(Movie $movie, CookieFinderService $cookieFinderService): JsonResponse
     {
+//        $response = new JsonResponse(['message' => 'Processing request...']);
+//        $chromeService->getPageContents($movie->getLink()->getUrl());
+
         //todo: check incoming movie state
         //if available in db the next state return it or fetch it and return it
         $result = $this->serversController->fetchMovie($movie);

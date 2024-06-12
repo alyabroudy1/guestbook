@@ -2,6 +2,7 @@
 
 namespace App\servers;
 
+use App\Entity\Dto\ChromeWebContentDTO;
 use App\Entity\Dto\HtmlMovieDto;
 use App\Entity\Episode;
 use App\Entity\Film;
@@ -12,22 +13,23 @@ use App\Entity\MovieType;
 use App\Entity\Season;
 use App\Entity\Series;
 use App\Entity\Server;
+use App\Service\CookieFinderService;
 use PHPUnit\Exception;
 use Symfony\Component\HttpClient\Exception\ClientException;
 use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 
 abstract class AbstractServer
 {
-
     /**
      * @param $query
      * @return Movie[]
      * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
      */
-    public function search($query): array
+    public function search(string $query): array
     {
         $url = $this->getSearchUrl($query);
         $movies = [];
@@ -60,13 +62,39 @@ abstract class AbstractServer
 
     protected function generateSeason(HtmlMovieDto $htmlMovieDto): ?Movie
     {
-        return $this->generateMovieFromHtml(new Season(), $htmlMovieDto, LinkState::Fetch, true);
-
+        $season = new Season();
+        $series = $htmlMovieDto->mainMovie;
+        if ($series instanceof Series){
+            $season->setSeries($series);
+        }
+        return $this->generateMovieFromHtml($season, $htmlMovieDto, LinkState::Fetch, true);
     }
 
     protected function generateEpisode(HtmlMovieDto $htmlMovieDto): Movie
     {
-        return $this->generateMovieFromHtml(new Film(), $htmlMovieDto, LinkState::Fetch, true);
+        $episode = new Episode();
+        $season = $htmlMovieDto->mainMovie;
+//        if (!$season instanceof Season){
+//
+//            if ($season !== null){
+//                //season can be an instance of series
+////                $newSeason = new Season();
+////                $newSeason->setLink($season->getLink());
+////                $newSeason->setTitle($season->getTitle());
+////                $newSeason->setDescription($season->getDescription());
+////                $newSeason->setRate($season->getRate());
+////                $newSeason->setCardImage($season->getCardImage());
+////                $newSeason->setBackgroundImage($season->getBackgroundImage());
+////                $newSeason->setCreatedAt($season->getCreatedAt());
+////                $newSeason->setUpdatedAt($season->getUpdatedAt());
+////                $newSeason->setPlayedTime($season->getPlayedTime());
+////                $newSeason->setSearchContext($season->getSearchContext());
+////                $newSeason->setTotalTime($season->getTotalTime());
+////                $season = $newSeason;
+//            }
+//        }
+        $episode->setSeason($season);
+        return $this->generateMovieFromHtml($episode, $htmlMovieDto, LinkState::Fetch, true);
     }
 
 
@@ -78,26 +106,47 @@ abstract class AbstractServer
     /**
      * @param Movie $movie
      * @return Link[]|null
-     * @throws TransportExceptionInterface
      */
-    public function fetchItem(Movie $movie): ?array
+    public function fetchItem(Movie $movie, CookieFinderService $cookieFinderService): ?array
     {
         $url = $this->getConfig()->getAuthority() . $movie->getLink()->getUrl();
         try {
             $response = $this->getRequest($url);
-            return $this->generateResolutions($response, $movie);
-        } catch (Exception $e) {
-            dd($e->getMessage());
+            dump('AbstractServer fetchItem: code: ' . $response->getStatusCode());
+            $chromeWebContentDTO = new ChromeWebContentDTO($response->getContent(), $response->getHeaders());
+            return $this->generateResolutions($chromeWebContentDTO, $movie);
+        } catch (ClientException | TransportExceptionInterface  $e) {
+            dump('AbstractServer fetchItem: error: ' .$e->getMessage());
+            $chromeWebContentDTO = $cookieFinderService->findCookies($movie->getLink()->getUrl(), $this->getConfig());
+            return $this->generateResolutions($chromeWebContentDTO, $movie);
+//            dd('fetchMovie: ', $chromeWebContentDTO);
+        }
+        return null;
+    }
+
+    public function fetchGroup(Movie $movie, CookieFinderService $cookieFinderService): ?array
+    {
+        $url = $this->getConfig()->getAuthority() . $movie->getLink()->getUrl();
+        try {
+            $response = $this->getRequest($url);
+            dump('AbstractServer fetchGroup: code: ' . $response->getStatusCode());
+            $chromeWebContentDTO = new ChromeWebContentDTO($response->getContent(), $response->getHeaders());
+            return $this->generateGroupMovies($chromeWebContentDTO, $movie);
+        } catch (ClientException | TransportExceptionInterface  $e) {
+            dump('AbstractServer fetchGroup: error: ' .$e->getMessage());
+            $chromeWebContentDTO = $cookieFinderService->findCookies($movie->getLink()->getUrl(), $this->getConfig());
+            return $this->generateGroupMovies($chromeWebContentDTO, $movie);
+//            dd('fetchMovie: ', $chromeWebContentDTO);
         }
         return null;
     }
 
     /**
-     * @param ResponseInterface $response
      * @param Movie $movie
      * @return Link[]
      */
-    protected abstract function generateResolutions(ResponseInterface $response, Movie $movie): array;
+    protected abstract function generateResolutions(ChromeWebContentDTO $chromeWebContentDTO, Movie $movie): array;
+    protected abstract function generateGroupMovies(ChromeWebContentDTO $chromeWebContentDTO, Movie $movie): array;
 
     protected function getSearchUrl($query): string
     {
@@ -114,7 +163,11 @@ abstract class AbstractServer
      */
     protected function getRequest(string $url): ResponseInterface
     {
-        return $this->getHttpClient()->request('GET', $url);
+//        dump('getRequest headers:', $this->getConfig()->getHeaders());
+        return $this->getHttpClient()->request('GET', $url, [
+            'headers' => $this->getConfig()->getHeaders(),
+            'max_redirects' => 10
+        ]);
     }
 
     protected abstract function getHttpClient(): HttpClientInterface;
@@ -153,14 +206,15 @@ abstract class AbstractServer
 
     protected function generateMovieFromHtml(Movie $movie, HtmlMovieDto $htmlMovieDto, LinkState $linkState, bool $splittableLink): Movie
     {
-        $movie->setTitle($htmlMovieDto->title);
+        $title = strtolower($htmlMovieDto->title);
+        $movie->setTitle($title);
         $movie->setDescription($htmlMovieDto->description);
         $movie->setCardImage($htmlMovieDto->cardImage);
         $movie->setDescription($htmlMovieDto->description);
 
         $link = new Link();
         $link->setServer($this->getConfig());
-        $link->setTitle($htmlMovieDto->title);
+        $link->setTitle($title);
         $link->setState($linkState);
         $link->setUrl($htmlMovieDto->videoUrl);
         $link->setSplittable($splittableLink);
@@ -174,7 +228,7 @@ abstract class AbstractServer
     protected function generateCleanTitle(?string $title)
     {
         // Array of words to be replaced
-        $replace = array('series', '-', '_', 'season', 'مسلسل', 'فيلم', 'فلم', 'موسم', 'مشاهدة', 'مترجم', 'انمي', 'أنمي');
+        $replace = array('series', '-', '_', 'season', 'مسلسل', 'فيلم', 'فلم', 'موسم', 'مشاهدة', 'مترجم', 'انمي', 'أنمي', 'الموسم');
         $title = str_ireplace($replace, '', $title);
 
         // Replace 4 digit numbers
@@ -188,5 +242,39 @@ abstract class AbstractServer
         $title = preg_replace('!\s+!', ' ', $title);
 
         return trim($title);
+    }
+
+    private function generateSeriesFromSeasonDto(HtmlMovieDto $htmlMovieDto)
+    {
+        $seriesTitle = $this->generateSeriesTitle($htmlMovieDto->title);
+        $seriesDTO = new HtmlMovieDto(
+            $seriesTitle,
+            $htmlMovieDto->videoUrl,
+            $htmlMovieDto->description,
+            $htmlMovieDto->cardImage,
+            $htmlMovieDto->rate
+        );
+        return $this->generateSeries($seriesDTO);
+    }
+
+    private function generateSeasonFromEpisodeDto(HtmlMovieDto $htmlMovieDto)
+    {
+        $seasonTitle = $this->generateSeriesTitle($htmlMovieDto->title);
+        $seasonDTO = new HtmlMovieDto(
+            $seasonTitle,
+            $htmlMovieDto->videoUrl,
+            $htmlMovieDto->description,
+            $htmlMovieDto->cardImage,
+            $htmlMovieDto->rate
+        );
+        return $this->generateSeason($seasonDTO);
+    }
+
+    private function generateSeriesTitle(string $title)
+    {
+        $title = $this->generateCleanTitle($title);
+        // remove one or two digit in the name like season 01
+        $pattern = "/\d{1,2}/";
+        return preg_replace($pattern, "", $title);
     }
 }

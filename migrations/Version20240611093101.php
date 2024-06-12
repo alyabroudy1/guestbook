@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20240605105014 extends AbstractMigration
+final class Version20240611093101 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -36,7 +36,7 @@ final class Version20240605105014 extends AbstractMigration
         $this->addSql('CREATE TABLE movie_category (movie_id INT NOT NULL, category_id INT NOT NULL, PRIMARY KEY(movie_id, category_id))');
         $this->addSql('CREATE INDEX IDX_DABA824C8F93B6FC ON movie_category (movie_id)');
         $this->addSql('CREATE INDEX IDX_DABA824C12469DE2 ON movie_category (category_id)');
-        $this->addSql('CREATE TABLE server (id INT NOT NULL, name VARCHAR(255) DEFAULT NULL, headers TEXT DEFAULT NULL, cookie TEXT DEFAULT NULL, authority VARCHAR(255) DEFAULT NULL, rate SMALLINT DEFAULT NULL, active BOOLEAN DEFAULT NULL, default_authority VARCHAR(255) DEFAULT NULL, model VARCHAR(255) DEFAULT NULL, PRIMARY KEY(id))');
+        $this->addSql('CREATE TABLE server (id INT NOT NULL, name VARCHAR(255) DEFAULT NULL, headers JSON DEFAULT NULL, cookie TEXT DEFAULT NULL, authority VARCHAR(255) DEFAULT NULL, rate SMALLINT DEFAULT NULL, active BOOLEAN DEFAULT NULL, default_authority VARCHAR(255) DEFAULT NULL, model VARCHAR(255) DEFAULT NULL, PRIMARY KEY(id))');
         $this->addSql('CREATE UNIQUE INDEX UNIQ_5A6DD5F6D79572D9 ON server (model)');
         $this->addSql('CREATE TABLE messenger_messages (id BIGSERIAL NOT NULL, body TEXT NOT NULL, headers TEXT NOT NULL, queue_name VARCHAR(190) NOT NULL, created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, available_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, delivered_at TIMESTAMP(0) WITHOUT TIME ZONE DEFAULT NULL, PRIMARY KEY(id))');
         $this->addSql('CREATE INDEX IDX_75EA56E0FB7336F0 ON messenger_messages (queue_name)');

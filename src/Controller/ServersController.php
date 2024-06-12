@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Episode;
 use App\Entity\Film;
 use App\Entity\Link;
 use App\Entity\LinkState;
@@ -9,14 +10,18 @@ use App\Entity\Movie;
 use App\Entity\Server;
 use App\Entity\ServerModel;
 use App\Entity\Source;
+use App\Event\MatchMoviesEvent;
 use App\servers\AbstractServer;
 use App\servers\AkwamTube;
 use App\servers\MovieMatcher;
 use App\servers\MovieServerInterface;
 use App\servers\MyCima;
+use App\Service\CookieFinderService;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
+use http\Exception\InvalidArgumentException;
 use http\Header\Parser;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -28,7 +33,9 @@ class ServersController extends AbstractController
 {
     private $servers;
 
-    public function __construct(private HttpClientInterface $httpClient, private EntityManagerInterface $entityManager, private MovieMatcher $matcher)
+    public function __construct(private HttpClientInterface  $httpClient, private EntityManagerInterface $entityManager,
+                                private MovieMatcher         $matcher,
+                                private  CookieFinderService $cookieFinderService, private readonly EventDispatcherInterface $eventDispatcher)
     {
         $this->initializeServers();
     }
@@ -39,14 +46,16 @@ class ServersController extends AbstractController
         //todo: try to get the result from database first and if theres no result then fetch it from the net
         //todo: find a way to update database movies something like fetched the last added movies once a day
         //todo:optimize search
-       $movieList = $this->getMovieListFromDB($query);
-       dump('getMovieListFromDB: ' . count($movieList));
-//        $movieList = [];
+//       $movieList = $this->getMovieListFromDB($query);
+//       dump('getMovieListFromDB: ' . count($movieList));
+        $movieList = [];
         if (empty($movieList)) {
             //search all server and add result to db
             $this->searchAllServers($query);
             //fetch result again from db
             $movieList = $this->getMovieListFromDB($query);
+            dd('$movieList', $movieList);
+
         }
 
         return $movieList;
@@ -87,9 +96,18 @@ class ServersController extends AbstractController
         /** @var AbstractServer $server */
         $server = $this->servers[$link->getServer()->getModel()->name];
 
-        if ($movie instanceof Film) {
-            return $server->fetchItem($movie);
+        if ($movie instanceof Film || $movie instanceof Episode) {
+            try {
+                return $server->fetchItem($movie, $this->cookieFinderService);
+            }catch (\Exception $exception){
+                dd('fetchMovie: '. $exception->getMessage(), get_class($exception));
+            }
         }
+
+        $fetchGroupResult = $server->fetchGroup($movie, $this->cookieFinderService);
+
+        $fetchGroupResult = $this->matcher->matchMovies($fetchGroupResult, $server);
+        return $fetchGroupResult;
 dd('nope');
 //        /** @var Movie $result */
 //        $result = match ($movie->getState()) {
@@ -128,21 +146,9 @@ dd('nope');
         //akwamTube
         //fetch new Server() from db
         //todo: suggest refactoring
-        $akwamTubeServerConfig = $this->entityManager->getRepository(Server::class)->findOneByModel(ServerModel::AkwamTube);
-//        dd($akwamTubeServerConfig, empty($akwamTubeServerConfig));
-        //        $akwamTubeServerConfig = [];
-        if (empty($akwamTubeServerConfig)) {
-            $akwamTubeServerConfig = new Server();
-            $akwamTubeServerConfig->setName(Server::SERVER_AKWAM);
-            $akwamTubeServerConfig->setModel(ServerModel::AkwamTube);
-            $akwamTubeServerConfig->setAuthority('https://i.akwam.tube');
-            $akwamTubeServerConfig->setDefaultAuthority('https://i.akwam.tube');
-            $akwamTubeServerConfig->setActive(true);
-            //only the first time if server is not saved to db
-            $this->entityManager->persist($akwamTubeServerConfig);
-            $this->entityManager->flush();
-        }
-        $this->servers[ServerModel::AkwamTube->name] = AkwamTube::getInstance($this->httpClient, $akwamTubeServerConfig[0]);
+//        $this->initializeServer(ServerModel::AkwamTube, 'https://i.akwam.tube', 'https://i.akwam.tube');
+        $this->initializeServer(ServerModel::Mycima, 'https://wecima.show', 'https://mycima.io');
+//        $this->initializeServer(ServerModel::Mycima, 'https://i.akwam.tube', 'https://i.akwam.tube');
 
 //        //myCima
 //        //fetch new Server() from db
@@ -177,7 +183,9 @@ dd('nope');
         /** @var AbstractServer $server */
         foreach ($this->servers as $server) {
             $result = $server->search($query);
-            $this->matcher->matchSearchList($result, $server);
+//            dd($result);
+//            $this->eventDispatcher->dispatch(new MatchMoviesEvent($result, $server));
+            $result = $this->matcher->matchMovies($result, $server);
 //            dd('searchAllServers: ' . $server->getConfig()->getModel()->name,
 //                $result);
         }
@@ -198,6 +206,34 @@ dd('nope');
 //            }
 //        }
         return $this->entityManager->getRepository(Movie::class)->findLastThirtyMovies();
+    }
+
+    public function initializeServer(ServerModel $serverModel, string $authority, string $defaultAuthority): void
+    {
+        $serverConfig = $this->entityManager->getRepository(Server::class)->findOneByModel($serverModel);
+//        dd($serverConfig);
+
+        if (empty($serverConfig)) {
+            $serverConfig = new Server();
+            $serverConfig->setName($serverModel->name);
+            $serverConfig->setModel($serverModel);
+            $serverConfig->setAuthority($authority);
+            $serverConfig->setDefaultAuthority($defaultAuthority);
+            $serverConfig->setActive(true);
+            //only the first time if server is not saved to db
+            $this->entityManager->persist($serverConfig);
+            $this->entityManager->flush();
+        }
+        $this->servers[$serverModel->name] = $this->generateServer($serverModel, $serverConfig);
+    }
+
+    private function generateServer(ServerModel $serverModel, Server $serverConfig)
+    {
+        return match ($serverModel) {
+            ServerModel::AkwamTube => AkwamTube::getInstance($this->httpClient, $serverConfig),
+            ServerModel::Mycima => MyCima::getInstance($this->httpClient, $serverConfig, $this->matcher),
+            default => throw new InvalidArgumentException("Unsupported ServerModel")
+        };
     }
 
 }

@@ -19,7 +19,7 @@ class Link
     #[Groups('movie_export')]
     private ?string $title = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(length: 255, unique: true, nullable: true)]
     #[Groups('movie_export')]
     private ?string $url = null;
 

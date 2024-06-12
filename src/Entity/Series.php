@@ -6,6 +6,7 @@ use App\Repository\SeriesRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: SeriesRepository::class)]
 #[ORM\Table(name: 'series')]
@@ -21,6 +22,7 @@ class Series extends Movie
         $this->seasons = new ArrayCollection();
     }
 
+    #[Groups('movie_export')]
     public function getType(): ?MovieType
     {
         return MovieType::Series;

@@ -2,24 +2,15 @@
 
 namespace App\servers;
 
-use App\Controller\MovieController;
-use App\Entity\Category;
+use App\Entity\Dto\ChromeWebContentDTO;
 use App\Entity\Dto\HtmlMovieDto;
-use App\Entity\Film;
 use App\Entity\Link;
 use App\Entity\LinkState;
 use App\Entity\Movie;
 use App\Entity\MovieType;
-use App\Entity\Season;
-use App\Entity\Series;
 use App\Entity\Server;
-use App\Entity\Source;
-use Doctrine\Common\Collections\ArrayCollection;
-use phpDocumentor\Reflection\Types\This;
-use PHPUnit\Exception;
+
 use Symfony\Component\DomCrawler\Crawler;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Generator\UrlGenerator;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
@@ -124,7 +115,7 @@ class AkwamTube extends AbstractServer
             $cardImage = $this->generateValidLinkPath($cardImage);
             $videoUrl = $this->generateValidLinkPath($videoUrl);
 
-            $htmlMovieDto = new HtmlMovieDto($this->generateCleanTitle($title), $videoUrl, '', $cardImage, '');
+            $htmlMovieDto = new HtmlMovieDto($title, $videoUrl, '', $cardImage, '', null);
             $movie = $this->generateSearchMovie($htmlMovieDto);
 
             $movieList[] = $movie;
@@ -192,14 +183,12 @@ class AkwamTube extends AbstractServer
      * @throws ServerExceptionInterface
      * @throws TransportExceptionInterface
      */
-    protected function generateResolutions(ResponseInterface $response, Movie $movie): array{
+    protected function generateResolutions(ChromeWebContentDTO $chromeWebContentDTO, Movie $movie): array{
         // Assuming $content contains your HTML response
-        $content = $response->getContent();
+        $content = $chromeWebContentDTO->content;
         $crawler = new Crawler($content);
 
-
         $videoGridElements = $crawler->filter('#play-video');
-
         $resolutions = [];
 
         if ($videoGridElements->count() > 0) {
@@ -248,5 +237,10 @@ class AkwamTube extends AbstractServer
     protected function getHttpClient(): HttpClientInterface
     {
         return $this->httpClient;
+    }
+
+    protected function generateGroupMovies(ChromeWebContentDTO $chromeWebContentDTO, Movie $movie): array
+    {
+        return [];
     }
 }

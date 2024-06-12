@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Server;
 use App\Entity\ServerModel;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\NonUniqueResultException;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -22,6 +23,9 @@ class ServerRepository extends ServiceEntityRepository
         parent::__construct($registry, Server::class);
     }
 
+    /**
+     * @throws NonUniqueResultException
+     */
     public function findOneByModel(?ServerModel $serverModel)
     {
         $queryBuilder = $this->createQueryBuilder('s');
@@ -29,7 +33,7 @@ class ServerRepository extends ServiceEntityRepository
             ->andWhere('s.model = :serverModel') // Use INSTANCE OF for type comparison
             ->setParameter('serverModel', $serverModel)
             ->getQuery()
-            ->getResult();
+            ->getOneOrNullResult();
     }
 
 //    /**
