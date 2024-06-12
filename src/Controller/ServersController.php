@@ -48,15 +48,15 @@ class ServersController extends AbstractController
         //todo:optimize search
 //       $movieList = $this->getMovieListFromDB($query);
 //       dump('getMovieListFromDB: ' . count($movieList));
-        $movieList = [];
-        if (empty($movieList)) {
+//        $movieList = [];
+//        if (empty($movieList)) {
             //search all server and add result to db
             $this->searchAllServers($query);
             //fetch result again from db
             $movieList = $this->getMovieListFromDB($query);
-            dd('$movieList', $movieList);
+//            dd('$movieList', $movieList);
 
-        }
+//        }
 
         return $movieList;
     }
