@@ -112,11 +112,11 @@ abstract class AbstractServer
         $url = $this->getConfig()->getAuthority() . $movie->getLink()->getUrl();
         try {
             $response = $this->getRequest($url);
-            dump('AbstractServer fetchItem: code: ' . $response->getStatusCode());
+//            dump('AbstractServer fetchItem: code: ' . $response->getStatusCode());
             $chromeWebContentDTO = new ChromeWebContentDTO($response->getContent(), $response->getHeaders());
             return $this->generateResolutions($chromeWebContentDTO, $movie);
         } catch (ClientException | TransportExceptionInterface  $e) {
-            dump('AbstractServer fetchItem: error: ' .$e->getMessage());
+//            dump('AbstractServer fetchItem: error: ' .$e->getMessage());
             $chromeWebContentDTO = $cookieFinderService->findCookies($movie->getLink()->getUrl(), $this->getConfig());
             return $this->generateResolutions($chromeWebContentDTO, $movie);
 //            dd('fetchMovie: ', $chromeWebContentDTO);
@@ -129,11 +129,11 @@ abstract class AbstractServer
         $url = $this->getConfig()->getAuthority() . $movie->getLink()->getUrl();
         try {
             $response = $this->getRequest($url);
-            dump('AbstractServer fetchGroup: code: ' . $response->getStatusCode());
+//            dump('AbstractServer fetchGroup: code: ' . $response->getStatusCode());
             $chromeWebContentDTO = new ChromeWebContentDTO($response->getContent(), $response->getHeaders());
             return $this->generateGroupMovies($chromeWebContentDTO, $movie);
         } catch (ClientException | TransportExceptionInterface  $e) {
-            dump('AbstractServer fetchGroup: error: ' .$e->getMessage());
+//            dump('AbstractServer fetchGroup: error: ' .$e->getMessage());
             $chromeWebContentDTO = $cookieFinderService->findCookies($movie->getLink()->getUrl(), $this->getConfig());
             return $this->generateGroupMovies($chromeWebContentDTO, $movie);
 //            dd('fetchMovie: ', $chromeWebContentDTO);

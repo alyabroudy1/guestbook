@@ -347,7 +347,7 @@ class MyCima extends AbstractServer
             });
         });
 
-        dump('generateResolutions: download '. $uls->count());
+//        dump('generateResolutions: download '. $uls->count());
 
         $uls = $crawler->filter('.WatchServersList');
 //        dump('generateResolutions: watch '. $uls->count());

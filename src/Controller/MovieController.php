@@ -5,8 +5,6 @@ namespace App\Controller;
 use App\Entity\Film;
 use App\Entity\Movie;
 
-use App\Entity\Source;
-
 use App\Service\ChromeService;
 use App\Service\CookieFinderService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
