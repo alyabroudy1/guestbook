@@ -51,6 +51,7 @@ class MovieController extends AbstractController
     #[Route('/search/{query}', name: 'app_movie_search')]
     public function search($query, Request $request): JsonResponse
     {
+        return new Response($query);
         $movieList = $this->serversController->search($query);
 
 //        $data = [
