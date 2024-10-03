@@ -55,9 +55,9 @@ class MovieController extends AbstractController
         $movieList = $this->serversController->search($query);
         
         $data = [
-            'type' => 'search',
+            ['type' => 'search',
             'title' => $query,
-            'result' => $movieList,
+            'result' => $movieList,]
         ];
 
         
@@ -78,9 +78,11 @@ class MovieController extends AbstractController
 
         $json = $this->serialize($movieList);
         $data = [
-            'type' => 'search',
+            [
+'type' => 'search',
             'title' => 'homepage',
             'result' => $movieList,
+            ]
         ];
 
         
