@@ -53,15 +53,15 @@ class MovieController extends AbstractController
     {
 //        return new Response($query);
         $movieList = $this->serversController->search($query);
-
+        
         $data = [
             'type' => 'search',
             'title' => $query,
             'result' => $movieList,
         ];
 
-        $json = $this->serialize($movieList);
-
+        
+        $json = $this->serialize($data);
         return JsonResponse::fromJsonString($json);
     }
 
@@ -76,14 +76,15 @@ class MovieController extends AbstractController
     {
         $movieList = $this->serversController->getHomepageMovies();
 
-       $data = [
-           'type' => 'search',
-           'title' => 'homepage',
-           'result' => $movieList,
-       ];
-
         $json = $this->serialize($movieList);
+        $data = [
+            'type' => 'search',
+            'title' => 'homepage',
+            'result' => $movieList,
+        ];
 
+        
+        $json = $this->serialize($data);
         return JsonResponse::fromJsonString($json);
     }
 
