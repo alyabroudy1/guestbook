@@ -109,10 +109,15 @@ abstract class AbstractServer
      */
     public function fetchItem(Movie $movie, CookieFinderService $cookieFinderService): ?array
     {
-        $url = $this->getConfig()->getAuthority() . $movie->getLink()->getUrl();
+        $url = $movie->getLink()->getUrl();
+        if(!str_starts_with($url, 'http')){
+            $url =  $this->getConfig()->getAuthority() .$movie->getLink()->getUrl();
+        }
+        // dd($url, $movie);
         try {
             $response = $this->getRequest($url);
-//            dump('AbstractServer fetchItem: code: ' . $response->getStatusCode());
+            // dd($response);
+        // dd('AbstractServer fetchItem: code: ' . $response->getStatusCode());
             $chromeWebContentDTO = new ChromeWebContentDTO($response->getContent(), $response->getHeaders());
             return $this->generateResolutions($chromeWebContentDTO, $movie);
         } catch (ClientException | TransportExceptionInterface  $e) {
