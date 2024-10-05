@@ -147,7 +147,9 @@ dd('nope');
         //fetch new Server() from db
         //todo: suggest refactoring
 //        $this->initializeServer(ServerModel::AkwamTube, 'https://i.akwam.tube', 'https://i.akwam.tube');
+        // $this->initializeServer(ServerModel::Mycima, 'https://wecima.show', 'https://mycima.io');
         $this->initializeServer(ServerModel::Mycima, 'https://wecima.show', 'https://mycima.io');
+        // $this->servers[ServerModel::Iptv->name] = $this->generateServer($serverModel, $serverConfig);
 //        $this->initializeServer(ServerModel::Mycima, 'https://i.akwam.tube', 'https://i.akwam.tube');
 
 //        //myCima

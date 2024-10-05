@@ -7,4 +7,5 @@ enum MovieType: string{
     case Season = 'Season';
     case Episode = 'Episode';
     case Film = 'Film';
+    case IptvChannel = 'Iptv_channel';
 }

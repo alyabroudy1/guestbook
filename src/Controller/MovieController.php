@@ -4,7 +4,8 @@ namespace App\Controller;
 
 use App\Entity\Film;
 use App\Entity\Movie;
-
+use App\Repository\IptvChannelRepository;
+use App\servers\IptvServer;
 use App\Service\ChromeService;
 use App\Service\CookieFinderService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -49,11 +50,14 @@ class MovieController extends AbstractController
      * @return JsonResponse The JSON response containing the search results.
      */
     #[Route('/search/{query}', name: 'app_movie_search')]
-    public function search($query, Request $request): JsonResponse
+    public function search($query, Request $request, IptvChannelRepository $iptvRepo): JsonResponse
     {
+        $isTv = $request->query->get('tv');
+     
 //        return new Response($query);
-        $movieList = $this->serversController->search($query);
-        
+        // $movieList = $this->serversController->search($query);
+   
+        $movieList = $iptvRepo->search($query);
         $data = [
             ['type' => 'search',
             'title' => $query,

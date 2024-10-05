@@ -14,7 +14,7 @@ use Symfony\Component\Serializer\Annotation\MaxDepth;
 #[ORM\MappedSuperclass]
 #[ORM\InheritanceType('SINGLE_TABLE')]
 #[ORM\DiscriminatorColumn(name: 'type', enumType: MovieType::class)]
-#[ORM\DiscriminatorMap(['Series' => Series::class, 'Season' => Season::class, 'Episode' => Episode::class, 'Film' => Film::class])]
+#[ORM\DiscriminatorMap(['Series' => Series::class, 'Season' => Season::class, 'Episode' => Episode::class, 'Film' => Film::class, 'Iptv_channel' => IptvChannel::class])]
 #[ORM\Table(name: 'movie')]
 abstract class Movie
 {
@@ -70,7 +70,8 @@ abstract class Movie
     #[Groups('movie_export')]
     private ?\DateTimeImmutable $updatedAt;
 
-    #[ORM\OneToOne(mappedBy: 'movie', targetEntity: Link::class, cascade: ['remove', 'persist'])]
+    #[ORM\OneToOne(targetEntity: Link::class, inversedBy: 'movie', cascade: ['persist', 'remove'])]
+    #[ORM\JoinColumn(name: 'link_id', referencedColumnName: 'id', onDelete: 'CASCADE')]  // Movie is the owning side
     #[MaxDepth(1)]
     #[Groups('movie_export')]
     private Link $link;
@@ -82,6 +83,10 @@ abstract class Movie
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $searchContext = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups('movie_export')]
+    private ?string $url = null;
 
     public function __construct()
     {
@@ -255,6 +260,18 @@ abstract class Movie
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function getUrl(): ?string
+    {
+        return $this->url;
+    }
+
+    public function setUrl(?string $url): static
+    {
+        $this->url = $url;
+
+        return $this;
     }
 
 }

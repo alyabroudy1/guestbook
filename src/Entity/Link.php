@@ -46,7 +46,7 @@ class Link
     #[Groups('movie_export')]
     private ?string $authority = null;
 
-    #[ORM\ManyToOne]
+    #[ORM\OneToOne(mappedBy: 'link', targetEntity: Movie::class)]
     private ?Movie $movie = null;
 
     public function getId(): ?int
