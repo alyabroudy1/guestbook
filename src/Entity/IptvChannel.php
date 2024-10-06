@@ -24,6 +24,10 @@ class IptvChannel extends Movie
     private ?string $groupTitle = null;
 
     #[Groups('movie_export')]
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $fileName = null;
+
+    #[Groups('movie_export')]
     public function getType(): ?MovieType
     {
         return MovieType::IptvChannel;
@@ -58,9 +62,21 @@ class IptvChannel extends Movie
         return $this->groupTitle;
     }
 
-    public function setGroupTitle(string $groupTitle): static
+    public function setGroupTitle(?string $groupTitle): static
     {
         $this->groupTitle = $groupTitle;
+
+        return $this;
+    }
+
+    public function getFileName(): ?string
+    {
+        return $this->fileName;
+    }
+
+    public function setFileName(?string $fileName): static
+    {
+        $this->fileName = $fileName;
 
         return $this;
     }
