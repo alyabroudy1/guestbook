@@ -27,6 +27,9 @@ class IptvChannel extends Movie
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $fileName = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $credentialUrl = null;
+
     #[Groups('movie_export')]
     public function getType(): ?MovieType
     {
@@ -77,6 +80,18 @@ class IptvChannel extends Movie
     public function setFileName(?string $fileName): static
     {
         $this->fileName = $fileName;
+
+        return $this;
+    }
+
+    public function getCredentialUrl(): ?string
+    {
+        return $this->credentialUrl;
+    }
+
+    public function setCredentialUrl(?string $credentialUrl): static
+    {
+        $this->credentialUrl = $credentialUrl;
 
         return $this;
     }

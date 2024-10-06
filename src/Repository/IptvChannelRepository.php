@@ -36,6 +36,14 @@ class IptvChannelRepository extends ServiceEntityRepository
     ;
        }
 
+       public function findChannelsWithCredentialUrl()
+    {
+        return $this->createQueryBuilder('c')
+            ->where('c.credentialUrl IS NOT NULL')
+            ->getQuery()
+            ->getResult();
+    }
+
     //    public function findOneBySomeField($value): ?IptvChannel
     //    {
     //        return $this->createQueryBuilder('i')
