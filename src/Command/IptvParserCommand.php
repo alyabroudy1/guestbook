@@ -2,6 +2,7 @@
 
 namespace App\Command;
 
+use App\Entity\IptvChannel;
 use App\Service\IPTVParser;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -58,7 +59,17 @@ class IptvParserCommand extends Command
 
             $this->iptvParser->parseAndSave($content, function ($index) use ($progressBar) {
                 $progressBar->setProgress($index);
-            });
+            },
+            function (bool $success, IptvChannel $iptvChannel) use ($io) {
+                $message = sprintf("Name: %s, gTitle: %s, url: %s, tvgLogo: %s",
+                $iptvChannel->getTvgName(),
+                $iptvChannel->getGroupTitle(),
+                $iptvChannel->getUrl(),
+                $iptvChannel->getTvgLogo()
+            );
+                $io->error($message);
+            }
+        );
 
             $progressBar->finish();
             $io->newLine();

@@ -14,13 +14,14 @@ class IPTVParser
         private EntityManagerInterface $entityManager, private LoggerInterface $logger)
     {}
 
-    public function parseAndSave(string $content, callable $progressCallback): void
+    public function parseAndSave(string $content, callable $progressCallback, callable $outputCallback): void
     {
         $lines = explode("\n", $content);
         foreach ($lines as $index => $line) {
             try {
                 $progressCallback($index);
                 $processedUrls = [];
+                $channel = new IptvChannel();
 
                 if (strpos($line, '#EXTINF:') === 0) {
                     preg_match('/tvg-name="([^"]*)" tvg-logo="([^"]*)" group-title="([^"]*)"/', $line, $matches);
@@ -40,19 +41,21 @@ class IPTVParser
                         continue;
                     }
 
-                    $url = $url + '||user-agent=airmaxtv';
+                    $url = $url . '||user-agent=airmaxtv';
                     $processedUrls[] = $url;
 
-                    $channel = new IptvChannel();
+                    
                     $channel->setTitle($name);
                     $channel->setUrl($url);
                     $channel->setTvgName($tvgName);
                     $channel->setTvgLogo($tvgLogo);
                     $channel->setGroupTitle($groupTitle);
                     $this->entityManager->persist($channel);
+                    // $outputCallback(true, $channel);
                 }
             } catch (\Exception $e) {
                 $this->logger->error('Error parsing line: ' . $line, ['exception' => $e]);
+                $outputCallback(false, $channel);
             }
 
         }
@@ -61,7 +64,8 @@ class IPTVParser
             $this->entityManager->flush();
         } catch (\Exception $e) {
             $this->logger->error('Error saving to database', ['exception' => $e]);
-            throw $e; // Re-throw the exception to be handled by the command
+            $outputCallback(false, $channel);
+            // throw $e; // Re-throw the exception to be handled by the command
         }
     }
 
