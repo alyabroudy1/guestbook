@@ -132,7 +132,7 @@ class IPTVParser
                     $filename = end($pathParts);
                     $channel->setFilename($filename);
                     $channel->setCredentialUrl($domain . $username . '/'. $password . '/');
-                    dd($channel->getCredentialUrl());
+                    // dd($channel->getCredentialUrl());
                     }
 
                     } catch (\Exception $e) {
