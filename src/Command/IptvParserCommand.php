@@ -33,6 +33,7 @@ class IptvParserCommand extends Command
         $this
             ->addArgument('playlist', InputArgument::REQUIRED, 'playlist url')
             // ->addOption('option1', null, InputOption::VALUE_NONE, 'Option description')
+            ->addOption('header', null, InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'HTTP headers to include in the request');
         ;
     }
 
@@ -40,13 +41,22 @@ class IptvParserCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
         $playlistLink = $input->getArgument('playlist');
+        $headers = $input->getOption('header');
 
         if ($playlistLink) {
             $io->note(sprintf('parsing playlist: %s', $playlistLink));
         }
 
+        // Convert headers from array of "key: value" to associative array
+        $headersArray = [];
+        foreach ($headers as $header) {
+            list($key, $value) = explode(':', $header, 2);
+            $headersArray[trim($key)] = trim($value);
+        }
+
         try {
-            $content = file_get_contents($playlistLink);
+            // $content = file_get_contents($playlistLink);
+            $content = $this->iptvParser->fetchContent($playlistLink, $headersArray);
             if ($content === false) {
                 $io->error('Failed to fetch the IPTV list.');
                 return Command::FAILURE;

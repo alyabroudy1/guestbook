@@ -6,13 +6,26 @@ use App\Entity\IptvChannel;
 use App\Entity\Link;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class IPTVParser
 {
 
     public function __construct(
-        private EntityManagerInterface $entityManager, private LoggerInterface $logger)
+        private EntityManagerInterface $entityManager,
+         private LoggerInterface $logger,
+         private HttpClientInterface $httpClient
+         )
     {}
+
+    public function fetchContent(string $url, array $headers = []): string
+    {
+        $response = $this->httpClient->request('GET', $url, [
+            'headers' => $headers,
+        ]);
+
+        return $response->getContent();
+    }
 
     public function parseAndSave(string $content, callable $progressCallback, callable $outputCallback): void
     {
