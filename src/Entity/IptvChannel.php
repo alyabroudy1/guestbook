@@ -27,6 +27,7 @@ class IptvChannel extends Movie
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $fileName = null;
 
+    #[Groups('movie_export')]
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $credentialUrl = null;
 
