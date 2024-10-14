@@ -47,15 +47,15 @@ class UpdateAirmaxCredentialsUrlCommand extends Command
         $newDomain = $input->getArgument('domain');
 
         $channels = $this->iptvChannelRepository->findChannelsWithCredentialUrl();
-
+//dd($channels[0]);
         $newUrl = $newDomain . $newUsername . '/' . $newPassword . '/' ;
         foreach ($channels as $channel) {
-            
-            $channel->setUrl($newUrl);
+
+            $channel->setCredentialUrl($newUrl);
 
             $this->entityManager->persist($channel);
         }
-        
+
         $this->entityManager->flush();
 
         $io->success($newUrl);
