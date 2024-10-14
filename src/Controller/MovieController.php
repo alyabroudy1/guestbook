@@ -53,19 +53,24 @@ class MovieController extends AbstractController
     public function search($query, Request $request, IptvChannelRepository $iptvRepo): JsonResponse
     {
         $isTv = $request->query->get('tv');
-     
+
 //        return new Response($query);
         // $movieList = $this->serversController->search($query);
-   
-        $movieList = $iptvRepo->search($query);
-        $data = [
-            ['type' => 'search',
-            'title' => $query,
-            'result' => $movieList,]
-        ];
 
-        
-        $json = $this->serialize($data);
+//        $movieList = $iptvRepo->search($query);
+        $categoryList = $iptvRepo->getHomepageResults();
+
+//        foreach ($categoryList as $category) {
+//
+//        }
+//        $data = [
+//            ['type' => 'search',
+//            'title' => $query,
+//            'result' => $movieList,]
+//        ];
+
+
+        $json = $this->serialize($categoryList);
         return JsonResponse::fromJsonString($json);
     }
 
@@ -89,7 +94,7 @@ class MovieController extends AbstractController
             ]
         ];
 
-        
+
         $json = $this->serialize($data);
         return JsonResponse::fromJsonString($json);
     }
