@@ -53,7 +53,7 @@ class IptvParserCommand extends Command
             list($key, $value) = explode(':', $header, 2);
             $headersArray[trim($key)] = trim($value);
         }
-
+//        dd($headersArray);
         try {
             // $content = file_get_contents($playlistLink);
             $content = $this->iptvParser->fetchContent($playlistLink, $headersArray);

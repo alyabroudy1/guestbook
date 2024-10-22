@@ -81,21 +81,22 @@ class MovieController extends AbstractController
      * @return JsonResponse The JSON response containing the search results.
      */
     #[Route('/homepage', name: 'app_movie_homepage')]
-    public function homepage(): JsonResponse
+    public function homepage(IptvChannelRepository $iptvRepo): JsonResponse
     {
         $movieList = $this->serversController->getHomepageMovies();
 
-        $json = $this->serialize($movieList);
-        $data = [
-            [
-'type' => 'search',
-            'title' => 'homepage',
-            'result' => $movieList,
-            ]
-        ];
+//        $json = $this->serialize($movieList);
+//        $data = [
+//            [
+//'type' => 'search',
+//            'title' => 'homepage',
+//            'result' => $movieList,
+//            ]
+//        ];
 
+        $categoryList = $iptvRepo->getHomepageResults(false);
 
-        $json = $this->serialize($data);
+        $json = $this->serialize($categoryList);
         return JsonResponse::fromJsonString($json);
     }
 

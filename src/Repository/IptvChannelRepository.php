@@ -11,7 +11,7 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class IptvChannelRepository extends ServiceEntityRepository
 {
-    private array $favoriteGroups = [
+    private array $favoritePaidGroups = [
         'Shahid',
         'NETFLIX',
         'OSN',
@@ -19,6 +19,11 @@ class IptvChannelRepository extends ServiceEntityRepository
         'BEIN',
         'ART',
         'MAJESTIC'
+    ];
+
+    private array $favoriteGroups = [
+        'Shahid',
+        'كوبرا'
     ];
     public function __construct(ManagerRegistry $registry)
     {
@@ -44,27 +49,12 @@ class IptvChannelRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function getHomepageResults(): array
+    public function getHomepageResults(bool $paidChannels): array
     {
-        $result = [];
-        // Add '%' before and after the query string for flexible matching
-        foreach ($this->favoriteGroups as $category) {
-            $query = '%' . $category . '%';
-            $resultList['category'] = $category;
-
-            $resultList['result'] = $this->createQueryBuilder('i')
-//                ->andWhere('i.title LIKE :val')
-//                ->orWhere('i.tvgName LIKE :val')
-                ->orWhere('i.groupTitle LIKE :val')
-                ->setParameter('val', $query) // Use the updated query with wildcards
-                ->orderBy('i.id', 'ASC')
-                // ->setMaxResults(10) // Uncomment if you want to limit results
-                ->getQuery()
-                ->getResult();
-            $result[] = $resultList;
+        if ($paidChannels){
+            return $this->getHomepageFavoritesChannels($this->favoritePaidGroups, true);
         }
-        return $result;
-
+        return $this->getHomepageFavoritesChannels($this->favoriteGroups, false);
     }
 
     public function findChannelsWithCredentialUrl()
@@ -84,4 +74,49 @@ class IptvChannelRepository extends ServiceEntityRepository
     //            ->getOneOrNullResult()
     //        ;
     //    }
+    private function getHomepageFavoritesChannels($favoriteGroups, $paid): array
+    {
+        $result = [];
+        $paidQueryValue = $paid ? 'IS NOT NULL ' : 'IS NULL';
+        // Add '%' before and after the query string for flexible matching
+        foreach ($favoriteGroups as $category) {
+            $query = '%' . $category . '%';
+            $resultList['title'] = $category;
+
+            $resultList['result'] = $this->createQueryBuilder('i')
+//                ->andWhere('i.title LIKE :val')
+//                ->orWhere('i.tvgName LIKE :val')
+                ->orWhere('i.fileName ' . $paidQueryValue)
+                ->andWhere('i.groupTitle LIKE :val')
+                ->setParameter('val', $query) // Use the updated query with wildcards
+                ->orderBy('i.id', 'ASC')
+                // ->setMaxResults(10) // Uncomment if you want to limit results
+                ->getQuery()
+                ->getResult();
+            $result[] = $resultList;
+        }
+        return $result;
+    }
+
+    private function getHomepagePaidChannels()
+    {
+        $result = [];
+        // Add '%' before and after the query string for flexible matching
+        foreach ($this->favoriteGroups as $category) {
+            $query = '%' . $category . '%';
+            $resultList['title'] = $category;
+
+            $resultList['result'] = $this->createQueryBuilder('i')
+//                ->andWhere('i.title LIKE :val')
+//                ->orWhere('i.tvgName LIKE :val')
+                ->orWhere('i.groupTitle LIKE :val')
+                ->setParameter('val', $query) // Use the updated query with wildcards
+                ->orderBy('i.id', 'ASC')
+                // ->setMaxResults(10) // Uncomment if you want to limit results
+                ->getQuery()
+                ->getResult();
+            $result[] = $resultList;
+        }
+        return $result;
+    }
 }
