@@ -84,7 +84,7 @@ class IptvChannelRepository extends ServiceEntityRepository
         // Add '%' before and after the query string for flexible matching
         foreach ($favoriteGroups as $category) {
             $query = '%' . $category . '%';
-            $resultList['title'] = $category;
+            $resultList['category'] = $category;
 
             $resultList['result'] = $this->createQueryBuilder('i')
 //                ->andWhere('i.title LIKE :val')
