@@ -138,6 +138,9 @@ class IPTVParser
 
             $channel->setGroupTitle($groupTitle);
             try {
+                if (strlen($channel->getUrl()) > 1500){
+                    dd($channel, strlen($channel->getUrl()) );
+                }
                 $this->entityManager->persist($channel);
             } catch (\Exception $e) {
                 //throw $th;
@@ -149,6 +152,8 @@ class IPTVParser
         try {
             $this->entityManager->flush();
         } catch (\Exception $e) {
+
+            dump($e->getMessage());
             $this->logger->error('Error saving to database', ['exception' => $e]);
         }
 //        dd('done 1');

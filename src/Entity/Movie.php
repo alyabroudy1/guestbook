@@ -84,7 +84,7 @@ abstract class Movie
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $searchContext = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(length: 1500, nullable: true)]
     #[Groups('movie_export')]
     private ?string $url = null;
 

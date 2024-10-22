@@ -23,7 +23,9 @@ class IptvChannelRepository extends ServiceEntityRepository
 
     private array $favoriteGroups = [
         'Shahid',
-        'كوبرا'
+        'أم بي سي',
+        'NEWS الاخبار',
+        'Children أطفال'
     ];
     public function __construct(ManagerRegistry $registry)
     {
@@ -42,6 +44,7 @@ class IptvChannelRepository extends ServiceEntityRepository
             ->andWhere('i.title LIKE :val')
             ->orWhere('i.tvgName LIKE :val')
             ->orWhere('i.groupTitle LIKE :val')
+//            ->orWhere('i.group LIKE :val')
             ->setParameter('val', $query) // Use the updated query with wildcards
             ->orderBy('i.id', 'ASC')
             // ->setMaxResults(10) // Uncomment if you want to limit results
