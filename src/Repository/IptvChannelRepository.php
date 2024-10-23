@@ -38,9 +38,9 @@ class IptvChannelRepository extends ServiceEntityRepository
     public function search($query): array
     {
         // Add '%' before and after the query string for flexible matching
+        $results['category'] = $query;
         $query = '%' . $query . '%';
-
-        return $this->createQueryBuilder('i')
+        $results['result'] =  $this->createQueryBuilder('i')
             ->andWhere('i.title LIKE :val')
             ->orWhere('i.tvgName LIKE :val')
             ->orWhere('i.groupTitle LIKE :val')
@@ -50,13 +50,11 @@ class IptvChannelRepository extends ServiceEntityRepository
             // ->setMaxResults(10) // Uncomment if you want to limit results
             ->getQuery()
             ->getResult();
+        return $results;
     }
 
     public function getHomepageResults(bool $paidChannels): array
     {
-        if ($paidChannels){
-            return $this->getHomepageFavoritesChannels($this->favoritePaidGroups, true);
-        }
         return $this->getHomepageFavoritesChannels($this->favoriteGroups, false);
     }
 
@@ -77,6 +75,7 @@ class IptvChannelRepository extends ServiceEntityRepository
     //            ->getOneOrNullResult()
     //        ;
     //    }
+
     private function getHomepageFavoritesChannels($favoriteGroups, $paid): array
     {
         $result = [];
@@ -98,7 +97,8 @@ class IptvChannelRepository extends ServiceEntityRepository
                 ->getResult();
             $result[] = $resultList;
         }
-        return $result;
+
+        return array_merge($result, $this->getHomepagePaidFavoritesChannels());
     }
 
     public function removeOldPaidList()
@@ -111,25 +111,28 @@ class IptvChannelRepository extends ServiceEntityRepository
         $query->execute();
     }
 
-    private function getHomepagePaidChannels()
+    private function getHomepagePaidFavoritesChannels()
     {
-        $result = [];
-        // Add '%' before and after the query string for flexible matching
-        foreach ($this->favoriteGroups as $category) {
-            $query = '%' . $category . '%';
-            $resultList['title'] = $category;
 
-            $resultList['result'] = $this->createQueryBuilder('i')
+        $result['category'] = 'تجريبي';
+        $tempList = [];
+        // Add '%' before and after the query string for flexible matching
+        foreach ($this->favoritePaidGroups as $category) {
+            $query = '%' . $category . '%';
+
+            $resultList = $this->createQueryBuilder('i')
 //                ->andWhere('i.title LIKE :val')
 //                ->orWhere('i.tvgName LIKE :val')
-                ->orWhere('i.groupTitle LIKE :val')
+                ->orWhere('i.fileName IS NOT NULL')
+                ->andWhere('i.groupTitle LIKE :val')
                 ->setParameter('val', $query) // Use the updated query with wildcards
                 ->orderBy('i.id', 'ASC')
                 // ->setMaxResults(10) // Uncomment if you want to limit results
                 ->getQuery()
                 ->getResult();
-            $result[] = $resultList;
+            $tempList = array_merge($tempList, $resultList) ;
         }
+        $result['result'] = $tempList;
         return $result;
     }
 }

@@ -58,7 +58,7 @@ class MovieController extends AbstractController
         // $movieList = $this->serversController->search($query);
 
 //        $movieList = $iptvRepo->search($query);
-        $categoryList = $iptvRepo->getHomepageResults();
+        $categoryList = $iptvRepo->search($query);
 
 //        foreach ($categoryList as $category) {
 //
