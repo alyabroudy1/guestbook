@@ -116,10 +116,13 @@ class IPTVParser
             $progressCallback($index);
             $segmentDTO = $this->generateSegmentDTO($segment);
             if ($segmentDTO === null){
-
                 $this->logger->error("error parsing segment: $segment");
                 continue;
             }
+            if ($segmentDTO->tvgLogo == 'https://bit.ly/3JQfa8u'){
+                continue;
+            }
+
             $channel = new IptvChannel();
             $channel->setTitle($segmentDTO->name);
             $channel->setUrl($segmentDTO->url);
@@ -315,7 +318,7 @@ class IPTVParser
 
     private function generateSegmentDTO(string $segment)
     {
-        $channel = new IptvChannel();
+
         try {
 
 //            $progressCallback($index);
@@ -370,6 +373,12 @@ class IPTVParser
                     $username = $pathParts[0] ?? '';
                     $password = $pathParts[1] ?? '';
                     $fileName = end($pathParts);
+
+                    // Extract the part after the last occurrence of '|'
+                    if (strpos($fileName, '|') !== false) {
+                        $fileNameParts = explode('|', $fileName);
+                        $fileName = $fileNameParts[0];  // Get the part after the last '|'
+                    }
                     $credentialUrl = $domain . $username . '/' . $password . '/';
                     // dd($channel->getCredentialUrl());
                 }
@@ -403,83 +412,83 @@ class IPTVParser
 
 
             //////////////////////
-            if (in_array($url, $processedUrls)) {
-                $this->logger->info("Duplicate URL found and skipped: $url");
-                return null;
-            }
-            try {
-                $parsedUrl = parse_url($url);
-                if (!array_key_exists('host', $parsedUrl)) {
-                    $this->logger->error("host is missing for url: $url");
-                    dd($segment, $cleanedLines, $url);
-                    return null;
-                }
-                if ($parsedUrl && str_contains($parsedUrl['host'], 'airmax')) {
-                    $pathParts = explode('/', ltrim($parsedUrl['path'], '/'));
-                    $domain = $parsedUrl['scheme'] . '://' . $parsedUrl['host'] . (isset($parsedUrl['port']) ? ':' . $parsedUrl['port'] : '') . '/';
-                    $username = $pathParts[0] ?? '';
-                    $password = $pathParts[1] ?? '';
-                    $filename = end($pathParts);
-                    $channel->setFilename($filename);
-                    $channel->setCredentialUrl($domain . $username . '/' . $password . '/');
-                    // dd($channel->getCredentialUrl());
-                }
-
-            } catch (\Exception $e) {
-                //throw $th;
-                dump($e->getMessage(), $url);
-            }
-
-
-            $processedUrls[] = $url;
+//            if (in_array($url, $processedUrls)) {
+//                $this->logger->info("Duplicate URL found and skipped: $url");
+//                return null;
+//            }
+//            try {
+//                $parsedUrl = parse_url($url);
+//                if (!array_key_exists('host', $parsedUrl)) {
+//                    $this->logger->error("host is missing for url: $url");
+//                    dd($segment, $cleanedLines, $url);
+//                    return null;
+//                }
+//                if ($parsedUrl && str_contains($parsedUrl['host'], 'airmax')) {
+//                    $pathParts = explode('/', ltrim($parsedUrl['path'], '/'));
+//                    $domain = $parsedUrl['scheme'] . '://' . $parsedUrl['host'] . (isset($parsedUrl['port']) ? ':' . $parsedUrl['port'] : '') . '/';
+//                    $username = $pathParts[0] ?? '';
+//                    $password = $pathParts[1] ?? '';
+//                    $filename = end($pathParts);
+//                    $channel->setFilename($filename);
+//                    $channel->setCredentialUrl($domain . $username . '/' . $password . '/');
+//                    // dd($channel->getCredentialUrl());
+//                }
+//
+//            } catch (\Exception $e) {
+//                //throw $th;
+//                dump($e->getMessage(), $url);
+//            }
+//
+//
+//            $processedUrls[] = $url;
 
 //                dd('163: ' , $tvgId, $tvgName, $tvgLogo, $groupTitle, $name, $url, $segment);
 
             // dd($segment, 'id: '.$tvgId, 'gName: '.$tvgName, 'gTitle: '.$groupTitle,  'name: '.$name,'url: '.$url, 'logo: '.$tvgLogo);
-
-
-            $referrer = null;
-            foreach ($cleanedLines as $line) {
-                if (strpos($line, '#EXTVLCOPT:') === 0) {
-                    if (strpos($line, 'http-user-agent=') !== false) {
-                        $userAgent = $this->extractVlcOpt($line, 'http-user-agent');
-                    } elseif (strpos($line, 'http-referrer=') !== false) {
-                        $referrer = $this->extractVlcOpt($line, 'http-referrer');
-                    }
-                }
-            }
-            $url = $url . '||user-agent=' . $userAgent;
-            if ($referrer) {
-                $url = $url . '&referrer=' . $referrer;
-            }
-            $channel->setTitle($name);
-            $channel->setUrl($url);
-            $channel->setTvgName($tvgName);
-            $channel->setTvgLogo($tvgLogo);
-
-            if (empty($groupTitle)) {
-                // throw new \Exception("URL is missing for channel: $name");
-                $this->logger->error("GroupTitle is missing for channel: $segment");
-                dd($segment, $cleanedLines, $url, $groupTitle);
-                // dd("URL is missing for channel: $segment");
-                $groupTitle = $tvgId;
-            }
-
-            $channel->setGroupTitle($groupTitle);
-            try {
-                $this->entityManager->persist($channel);
-            } catch (\Exception $e) {
-                //throw $th;
-                $outputCallback(false, $channel);
-            }
+//
+//
+//            $referrer = null;
+//            foreach ($cleanedLines as $line) {
+//                if (strpos($line, '#EXTVLCOPT:') === 0) {
+//                    if (strpos($line, 'http-user-agent=') !== false) {
+//                        $userAgent = $this->extractVlcOpt($line, 'http-user-agent');
+//                    } elseif (strpos($line, 'http-referrer=') !== false) {
+//                        $referrer = $this->extractVlcOpt($line, 'http-referrer');
+//                    }
+//                }
+//            }
+//            $url = $url . '||user-agent=' . $userAgent;
+//            if ($referrer) {
+//                $url = $url . '&referrer=' . $referrer;
+//            }
+//            $channel->setTitle($name);
+//            $channel->setUrl($url);
+//            $channel->setTvgName($tvgName);
+//            $channel->setTvgLogo($tvgLogo);
+//
+//            if (empty($groupTitle)) {
+//                // throw new \Exception("URL is missing for channel: $name");
+//                $this->logger->error("GroupTitle is missing for channel: $segment");
+//                dd($segment, $cleanedLines, $url, $groupTitle);
+//                // dd("URL is missing for channel: $segment");
+//                $groupTitle = $tvgId;
+//            }
+//
+//            $channel->setGroupTitle($groupTitle);
+//            try {
+//                $this->entityManager->persist($channel);
+//            } catch (\Exception $e) {
+//                //throw $th;
+//                $outputCallback(false, $channel);
+//            }
             // dump($channel->getUrl());
             // $outputCallback(true, $channel);
 
         } catch (\Exception $e) {
-            dd($e->getMessage());
+//            dd($e->getMessage());
             $this->logger->error('Error parsing line: ' . $segment, ['exception' => $e]);
             // dd($e->getMessage(), $segment);
-            $outputCallback(false, $channel);
+//            $outputCallback(false, $channel);
         }
     }
 
@@ -512,7 +521,7 @@ class IPTVParser
             }
             $url = str_replace('#http', 'http', $url);
         }
-        $url = $url . '||user-agent=' . $userAgent;
+        $url = $url . '|user-agent=' . $userAgent;
         if ($referrer) {
             $url = $url . '&referrer=' . $referrer;
         }

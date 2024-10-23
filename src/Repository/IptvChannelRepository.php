@@ -101,6 +101,16 @@ class IptvChannelRepository extends ServiceEntityRepository
         return $result;
     }
 
+    public function removeOldPaidList()
+    {
+        $qb = $this->createQueryBuilder('i');
+        $qb->delete()
+            ->where('i.fileName IS NOT NULL');
+
+        $query = $qb->getQuery();
+        $query->execute();
+    }
+
     private function getHomepagePaidChannels()
     {
         $result = [];

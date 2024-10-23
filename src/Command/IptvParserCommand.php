@@ -3,6 +3,7 @@
 namespace App\Command;
 
 use App\Entity\IptvChannel;
+use App\Repository\IptvChannelRepository;
 use App\Service\IPTVParser;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -23,6 +24,7 @@ class IptvParserCommand extends Command
 {
     public function __construct(
         private IPTVParser $iptvParser,
+        private IptvChannelRepository $iptvRepo,
         private LoggerInterface $logger)
     {
         parent::__construct();
@@ -55,13 +57,18 @@ class IptvParserCommand extends Command
         }
 //        dd($headersArray);
         try {
+
+            if (str_contains($playlistLink, 'airmaxtv')) {
+                $this->iptvRepo->removeOldPaidList();
+                $io->info('old paid list removed');
+            }
+
             // $content = file_get_contents($playlistLink);
             $content = $this->iptvParser->fetchContent($playlistLink, $headersArray);
             if ($content === false) {
                 $io->error('Failed to fetch the IPTV list.');
                 return Command::FAILURE;
             }
-
             $lines = explode("\n", $content);
             $totalLines = count($lines);
             $progressBar = new ProgressBar($output, $totalLines);
