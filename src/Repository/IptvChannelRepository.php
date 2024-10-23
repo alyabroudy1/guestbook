@@ -97,8 +97,8 @@ class IptvChannelRepository extends ServiceEntityRepository
                 ->getResult();
             $result[] = $resultList;
         }
-
-        return array_merge($result, $this->getHomepagePaidFavoritesChannels());
+        $result[]  = $this->getHomepagePaidFavoritesChannels();
+        return $result;
     }
 
     public function removeOldPaidList()
