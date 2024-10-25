@@ -43,12 +43,12 @@ class CookieFinderService
             'headless' => true,
             'keepAlive' => false,
             'noSandbox' => false,
-            'no-crashpad' => true,
+            'userDataDir' => '/var/www/.local/chrome-user-data',
+            'userCrashDumpsDir' => '/var/www/.local/crashpad',
+            'noCrashpad' => true,
+            'disableGpu' => true,
             'disable-dev-shm-usage' => true,
-            'disable-gpu' => true,
-            'disable-crash-reporter' => true,
-            'crash-dump-dir' => '/var/www/.local/crashpad',
-            'user-data-dir' => '/var/www/.local/chrome-user-data'
+            'disableCrashReporter' => true,
         ]);
 
         try {
