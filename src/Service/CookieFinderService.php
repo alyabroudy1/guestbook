@@ -44,6 +44,9 @@ class CookieFinderService
             'keepAlive' => false,
             'noSandbox' => false,
             'no-crashpad' => true,
+            'disable-dev-shm-usage' => true,
+            'disable-gpu' => true,
+            'disable-crash-reporter' => true,
             'crash-dump-dir' => '/var/www/.local/crashpad',
             'user-data-dir' => '/var/www/.local/chrome-user-data'
         ]);
