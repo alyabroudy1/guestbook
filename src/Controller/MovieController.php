@@ -114,7 +114,8 @@ class MovieController extends AbstractController
         ];
 
 
-        $url = "https://airmax.boats/airmaxtvXXSW/airmaxtvWWSX/518.ts";
+        $url = "https://airmax.boats/airmaxtvXXSW/airmaxtvWWSX/".$id;
+
         $response = $httpClient->request('GET', $url, [
             'headers' => $requestHeaders,
         ]);
