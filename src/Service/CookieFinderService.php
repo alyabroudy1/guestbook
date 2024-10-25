@@ -43,6 +43,7 @@ class CookieFinderService
             'headless' => true,
             'keepAlive' => false,
             'noSandbox' => false,
+            'no-crashpad' => true,
             'crash-dump-dir' => '/var/www/.local/crashpad',
             'user-data-dir' => '/var/www/.local/chrome-user-data'
         ]);
