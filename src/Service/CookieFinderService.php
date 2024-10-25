@@ -28,8 +28,9 @@ class CookieFinderService
     {
     }
 
-    public function findCookies(string $url, Server $server): ChromeWebContentDTO
+    public function findCookies(string $url, ?Server $server): ChromeWebContentDTO
     {
+        dump('Cookies Found' );
         $response = new JsonResponse(['message' => 'Processing request...']);
         $chromeWebContentDto = new ChromeWebContentDTO('', []);
 
@@ -95,6 +96,7 @@ class CookieFinderService
                                 $eventDispatcher->dispatch($event);
                                 $chromeWebContentDto->headers = $headers;
                                 $chromeWebContentDto->content = $cResponse->getBody()->getContents();
+                              dd($headers);
                                 $server->setHeaders($headers);
                                 $this->entityManager->persist($server);
                                 $this->entityManager->flush();

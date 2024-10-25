@@ -101,6 +101,14 @@ class MovieController extends AbstractController
         return JsonResponse::fromJsonString($json);
     }
 
+    #[Route('/cookie', name: 'app_movie_fetch_cookie')]
+//    public function fetchMovie(Movie $movie, ChromeService $chromeService): JsonResponse
+    public function fetchCookie(HttpClientInterface $httpClient, CookieFinderService $cookieFinderService): Response
+    {
+        $url = 'https://www.faselhds.care';
+        $cookieFinderService->findCookies($url, null);
+    }
+
     #[Route('/fetch/{id}', name: 'app_movie_fetch_source')]
 //    public function fetchMovie(Movie $movie, ChromeService $chromeService): JsonResponse
     public function fetchMovie($id, HttpClientInterface $httpClient, CookieFinderService $cookieFinderService): Response
