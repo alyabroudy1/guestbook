@@ -115,11 +115,11 @@ class IPTVParser
         foreach ($segments as $index => $segment) {
             $progressCallback($index);
             $segmentDTO = $this->generateSegmentDTO($segment);
-            if ($segmentDTO === null){
+            if ($segmentDTO === null) {
                 $this->logger->error("error parsing segment: $segment");
                 continue;
             }
-            if ($segmentDTO->tvgLogo == 'https://bit.ly/3JQfa8u'){
+            if ($segmentDTO->tvgLogo == 'https://bit.ly/3JQfa8u') {
                 continue;
             }
 
@@ -130,7 +130,7 @@ class IPTVParser
             $channel->setTvgLogo($segmentDTO->tvgLogo);
             $channel->setFileName($segmentDTO->fileName);
             $channel->setCredentialUrl($segmentDTO->credentialUrl);
-            $groupTitle =$segmentDTO->groupTitle;
+            $groupTitle = $segmentDTO->groupTitle;
             if (empty($groupTitle)) {
                 // throw new \Exception("URL is missing for channel: $name");
                 $this->logger->error("GroupTitle is missing for channel: $segment");
@@ -141,8 +141,8 @@ class IPTVParser
 
             $channel->setGroupTitle($groupTitle);
             try {
-                if (strlen($channel->getUrl()) > 1500){
-                    dd($channel, strlen($channel->getUrl()) );
+                if (strlen($channel->getUrl()) > 1500) {
+                    dd($channel, strlen($channel->getUrl()));
                 }
                 $this->entityManager->persist($channel);
             } catch (\Exception $e) {
@@ -403,13 +403,14 @@ class IPTVParser
             $segmentDTO->tvgLogo = $tvgLogo;
             $segmentDTO->groupTitle = $groupTitle;
             $segmentDTO->name = $name;
-//            $segmentDTO->url = $url;
-            $segmentDTO->url = 'http://194.164.53.40/movie/fetch/' . $fileName;
+            if ($fileName) {
+                $segmentDTO->url = 'http://194.164.53.40/movie/fetch/' . $fileName;
+            } else {
+                $segmentDTO->url = $url;
+            }
             $segmentDTO->fileName = $fileName;
             $segmentDTO->credentialUrl = $credentialUrl;
             return $segmentDTO;
-
-
 
 
             //////////////////////
@@ -516,7 +517,7 @@ class IPTVParser
         }
         if ($url === null) {
             $url = array_pop($lines);
-            if (!str_starts_with($url, '#http')){
+            if (!str_starts_with($url, '#http')) {
 //                dd($lines);
                 return null;
             }
