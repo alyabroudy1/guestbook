@@ -22,15 +22,15 @@ use Symfony\Component\HttpFoundation\Response;
 
 class CookieFinderService
 {
-    public function __construct(private  EventDispatcherInterface $eventDispatcher,
-                                private readonly ServerRepository $serverRepository,
+    public function __construct(private EventDispatcherInterface        $eventDispatcher,
+                                private readonly ServerRepository       $serverRepository,
                                 private readonly EntityManagerInterface $entityManager)
     {
     }
 
     public function findCookies(string $url, ?Server $server): ChromeWebContentDTO
     {
-        dump('Cookies Found' );
+        dump('Cookies Found');
         $response = new JsonResponse(['message' => 'Processing request...']);
         $chromeWebContentDto = new ChromeWebContentDTO('', []);
 
@@ -42,15 +42,17 @@ class CookieFinderService
         $browser = $browserFactory->createBrowser([
             'headless' => true,
             'keepAlive' => false,
-            'noSandbox' => false
+            'noSandbox' => false,
+            'crash-dump-dir' => '/var/www/.local/crashpad',
+            'user-data-dir' => '/var/www/.local/chrome-user-data'
         ]);
 
         try {
             try {
                 $page = $browser->createPage();
-            } catch (CommunicationException | NoResponseAvailable | OperationTimedOut $e) {
-            dump('error: ' . $e->getMessage());
-            return new JsonResponse(['message' => 'Error creating page']);
+            } catch (CommunicationException|NoResponseAvailable|OperationTimedOut $e) {
+                dump('error: ' . $e->getMessage());
+                return new JsonResponse(['message' => 'Error creating page']);
             }
             try {
                 $page->getSession()->sendMessage(new Message(
@@ -61,7 +63,7 @@ class CookieFinderService
             }
 
 
-            $referer =[];
+            $referer = [];
             $client = new \GuzzleHttp\Client();
             $eventDispatcher = $this->eventDispatcher;
             $session = $page->getSession();
@@ -74,46 +76,46 @@ class CookieFinderService
                 $session,
                 &$chromeWebContentDto,
                 &$server
-            ) : void {
+            ): void {
 //                dump(  $params);
                 $headers = $params['request']['headers'];
 
 
-                    if ($browser != null){
-                        try {
+                if ($browser != null) {
+                    try {
 //                $url = 'https://wecima.show/watch/%d9%81%d9%8a%d9%84%d9%85-sonic-the-hedgehog-2020-%d9%85%d8%aa%d8%b1%d8%ac%d9%85-1/';
-                            $cResponse = $client->get($url, [
+                        $cResponse = $client->get($url, [
 //                    'cookies' => $jar, // Pass the entire CookieJar to the request
-                                'headers' => $headers,
-                            ]);
+                            'headers' => $headers,
+                        ]);
 
-                            if ($cResponse->getStatusCode() === 200) {
-                                dump('success closing in listener');
-                                $response->setContent(json_encode(['message' => 'Cookies found!', 'foundCookies' => $headers]));
-                                 $response->setStatusCode(Response::HTTP_OK);
+                        if ($cResponse->getStatusCode() === 200) {
+                            dump('success closing in listener');
+                            $response->setContent(json_encode(['message' => 'Cookies found!', 'foundCookies' => $headers]));
+                            $response->setStatusCode(Response::HTTP_OK);
 //
-                                $event = new CookiesFoundEvent(true, $headers);
-                                $eventDispatcher->dispatch($event);
-                                $chromeWebContentDto->headers = $headers;
-                                $chromeWebContentDto->content = $cResponse->getBody()->getContents();
-                              dd($headers);
-                                $server->setHeaders($headers);
-                                $this->entityManager->persist($server);
-                                $this->entityManager->flush();
-                                try {
-                                    $session->removeAllListeners('method:Network.requestWillBeSent');
-                                } catch (\Exception $e) {
-                                    dump('fail closing in listener: ' . $e->getMessage());
-                                }
+                            $event = new CookiesFoundEvent(true, $headers);
+                            $eventDispatcher->dispatch($event);
+                            $chromeWebContentDto->headers = $headers;
+                            $chromeWebContentDto->content = $cResponse->getBody()->getContents();
+                            dd($headers);
+                            $server->setHeaders($headers);
+                            $this->entityManager->persist($server);
+                            $this->entityManager->flush();
+                            try {
+                                $session->removeAllListeners('method:Network.requestWillBeSent');
+                            } catch (\Exception $e) {
+                                dump('fail closing in listener: ' . $e->getMessage());
                             }
+                        }
 
 //                dd($response->getStatusCode(), $params, $response->getBody()->getContents());
 
-                        } catch (GuzzleException $e) {
-                            dump('client failed: ', $e->getCode());
-                        }
-
+                    } catch (GuzzleException $e) {
+                        dump('client failed: ', $e->getCode());
                     }
+
+                }
 
             });
 
