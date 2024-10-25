@@ -5,7 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="69fe878d-080c-4d55-8bb2-6bed407330b8" name="Changes" comment="docker">
-      <change beforePath="$PROJECT_DIR$/src/Repository/IptvChannelRepository.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Repository/IptvChannelRepository.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Controller/MovieController.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/Controller/MovieController.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -273,7 +274,7 @@
       <workItem from="1702226981372" duration="6322000" />
       <workItem from="1728323468545" duration="2462000" />
       <workItem from="1728894764713" duration="5036000" />
-      <workItem from="1729590428865" duration="23086000" />
+      <workItem from="1729590428865" duration="27876000" />
     </task>
     <task id="LOCAL-00001" summary="search direct">
       <option name="closed" value="true" />

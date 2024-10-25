@@ -19,6 +19,7 @@ use Symfony\Component\Serializer\Encoder\JsonEncode;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 
 /**
@@ -102,18 +103,58 @@ class MovieController extends AbstractController
 
     #[Route('/fetch/{id}', name: 'app_movie_fetch_source')]
 //    public function fetchMovie(Movie $movie, ChromeService $chromeService): JsonResponse
-    public function fetchMovie(Movie $movie, CookieFinderService $cookieFinderService): JsonResponse
+    public function fetchMovie($id, HttpClientInterface $httpClient, CookieFinderService $cookieFinderService): Response
     {
+        $requestHeaders = [
+            'Icy-MetaData' => 1,
+            'User-Agent' => 'airmaxtv',
+            'Accept-Encoding' => 'identity',
+            'Host' => 'airmax.boats',
+            'Connection' => 'Keep-Alive'
+        ];
+
+
+        $url = "https://airmax.boats/airmaxtvXXSW/airmaxtvWWSX/518.ts";
+        $response = $httpClient->request('GET', $url, [
+            'headers' => $requestHeaders,
+        ]);
+        //needs to be called in order to fetch headers
+        $response->getHeaders();
+        $responseHeaders = $response->getInfo()['response_headers'];
+        if (!$responseHeaders){
+            // fail to fetch video url
+            return new JsonResponse([], Response::HTTP_NO_CONTENT);
+        }
+        $videoUrl = null;
+        $locationKey = 'Location:';
+        foreach ($responseHeaders as $header) {
+            if (str_contains($header, $locationKey)){
+                $videoUrl =trim(str_replace($locationKey, '', $header));
+                break;
+            }
+        }
+        if (!$videoUrl){
+            return new JsonResponse([], Response::HTTP_NO_CONTENT);
+        }
+
+        // Convert array to URL-encoded query string and replace '&' with '|'
+        $queryString = http_build_query($requestHeaders);
+        $delimiter = '|';
+
+        return $this->redirect($videoUrl. $delimiter . $queryString);
+
 //        $response = new JsonResponse(['message' => 'Processing request...']);
 //        $chromeService->getPageContents($movie->getLink()->getUrl());
 
         //todo: check incoming movie state
         //if available in db the next state return it or fetch it and return it
-        $result = $this->serversController->fetchMovie($movie);
 
-        $json = $this->serialize($result);
+//        $result = $this->serversController->fetchMovie($movie);
 
-        return JsonResponse::fromJsonString($json);
+//        $json = $this->serialize($result);
+
+//        return JsonResponse::fromJsonString($json);
+        return new JsonResponse();
     }
 //
 //    #[Route('/fetchSource/{source}', name: 'app_movie_fetch_source')]
@@ -138,8 +179,8 @@ class MovieController extends AbstractController
                 AbstractNormalizer::GROUPS => 'movie_export',
                 JsonEncode::OPTIONS => JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES,
                 AbstractNormalizer::CIRCULAR_REFERENCE_HANDLER => function ($object, $format, $context) {
-                  //  if ($object instanceof Movie)
-                        return $object->getId();
+                    //  if ($object instanceof Movie)
+                    return $object->getId();
                 },
                 AbstractNormalizer::CALLBACKS => [
                     'type' => function ($object) {
