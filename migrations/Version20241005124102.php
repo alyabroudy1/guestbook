@@ -20,8 +20,8 @@ final class Version20241005124102 extends AbstractMigration
     public function up(Schema $schema): void
     {
         // this up() migration is auto-generated, please modify it to your needs
-        $this->addSql('DROP SEQUENCE messenger_messages_id_seq CASCADE');
-        $this->addSql('DROP TABLE messenger_messages');
+//        $this->addSql('DROP SEQUENCE messenger_messages_id_seq CASCADE');
+//        $this->addSql('DROP TABLE messenger_messages');
         $this->addSql('CREATE UNIQUE INDEX UNIQ_36AC99F1F47645AE ON link (url)');
         $this->addSql('ALTER TABLE movie ADD url VARCHAR(255) DEFAULT NULL');
         $this->addSql('ALTER TABLE movie ADD tvg_name VARCHAR(70) DEFAULT NULL');
