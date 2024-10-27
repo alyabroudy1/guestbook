@@ -166,7 +166,6 @@
       <path value="$PROJECT_DIR$/vendor/chrome-php/wrench" />
       <path value="$PROJECT_DIR$/vendor/chrome-php/chrome" />
       <path value="$PROJECT_DIR$/vendor/evenement/evenement" />
-      <path value="$PROJECT_DIR$/vendor/facebook/webdriver" />
       <path value="$PROJECT_DIR$/vendor/guzzlehttp/psr7" />
       <path value="$PROJECT_DIR$/vendor/guzzlehttp/guzzle" />
       <path value="$PROJECT_DIR$/vendor/guzzlehttp/promises" />
@@ -177,6 +176,7 @@
       <path value="$PROJECT_DIR$/vendor/runtime/frankenphp-symfony" />
       <path value="$PROJECT_DIR$/vendor/symfony/polyfill-php83" />
       <path value="$PROJECT_DIR$/vendor/symfony/type-info" />
+      <path value="$PROJECT_DIR$/vendor/dbrekelmans/bdi" />
     </include_path>
   </component>
   <component name="PhpInterpreters">

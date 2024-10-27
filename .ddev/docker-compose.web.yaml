@@ -1,0 +1,9 @@
+version: '3.6'
+services:
+  web:
+    environment:
+      - CHROME_PATH=/usr/bin/google-chrome
+      - CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
+#    webimage_extra_packages:
+#      - chromium
+#      - chromium-chromedriver
