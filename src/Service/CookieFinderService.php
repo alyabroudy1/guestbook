@@ -36,10 +36,10 @@ class CookieFinderService
         $cookieFound = false;
 // starts headless Chrome
 
-        $browser = $browserFactory->addOptions([
-            'userDataDir' => $userDataDir
-        ])
-            ->createBrowser([
+//        $browser = $browserFactory->addOptions([
+//            'userDataDir' => $userDataDir
+//        ])
+        $browser =     $browserFactory->createBrowser([
             'headless' => true,
             'keepAlive' => false,
             'noSandbox' => true,
@@ -95,14 +95,14 @@ class CookieFinderService
 
                         if ($cResponse->getStatusCode() === 200) {
                             dump('success closing in listener');
-                            $response->setContent(json_encode(['message' => 'Cookies found!', 'foundCookies' => $headers]));
-                            $response->setStatusCode(Response::HTTP_OK);
+//                            $response->setContent(json_encode(['message' => 'Cookies found!', 'foundCookies' => $headers]));
+//                            $response->setStatusCode(Response::HTTP_OK);
 //
                             $event = new CookiesFoundEvent(true, $headers);
                             $eventDispatcher->dispatch($event);
+                            dd($headers);
                             $chromeWebContentDto->headers = $headers;
                             $chromeWebContentDto->content = $cResponse->getBody()->getContents();
-                            dd($headers);
                             $server->setHeaders($headers);
                             $this->entityManager->persist($server);
                             $this->entityManager->flush();
