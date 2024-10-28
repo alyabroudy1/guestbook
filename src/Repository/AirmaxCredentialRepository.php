@@ -31,6 +31,29 @@ class AirmaxCredentialRepository extends ServiceEntityRepository
     //        ;
     //    }
 
+    public function updateCredentials($credentialsUrl){
+        $qb = $this->createQueryBuilder('c')
+            ->update()
+            ->set('c.credentialUrl', ':newUrl')
+            ->where('c.domain = :domain')
+            ->setParameter('newUrl', $credentialsUrl)
+            ->setParameter('domain', 'airmax');
+
+        $updatedRows = $qb->getQuery()->execute();
+
+        // If no rows were updated, create a new Credential entity
+        if ($updatedRows === 0) {
+            $credential = new AirmaxCredential();
+            $credential->setDomain('airmax');
+            $credential->setCredentialUrl($credentialsUrl);
+
+            $this->getEntityManager()->persist($credential);
+            $this->getEntityManager()->flush();
+        }
+
+        return $updatedRows > 0;
+    }
+
     //    public function findOneBySomeField($value): ?AirmaxCredential
     //    {
     //        return $this->createQueryBuilder('a')

@@ -22,6 +22,9 @@ class AirmaxCredential
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $password = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $credentialUrl = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -59,6 +62,18 @@ class AirmaxCredential
     public function setPassword(?string $password): static
     {
         $this->password = $password;
+
+        return $this;
+    }
+
+    public function getCredentialUrl(): ?string
+    {
+        return $this->credentialUrl;
+    }
+
+    public function setCredentialUrl(?string $credentialUrl): static
+    {
+        $this->credentialUrl = $credentialUrl;
 
         return $this;
     }

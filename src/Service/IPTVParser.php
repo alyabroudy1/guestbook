@@ -2,9 +2,11 @@
 
 namespace App\Service;
 
+use App\Entity\AirmaxCredential;
 use App\Entity\Dto\IptvSegmentDTO;
 use App\Entity\IptvChannel;
 use App\Entity\Link;
+use App\Repository\AirmaxCredentialRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -15,7 +17,8 @@ class IPTVParser
     public function __construct(
         private EntityManagerInterface $entityManager,
         private LoggerInterface        $logger,
-        private HttpClientInterface    $httpClient
+        private HttpClientInterface    $httpClient,
+        private AirmaxCredentialRepository $credentialRepo
     )
     {
     }
@@ -111,6 +114,10 @@ class IPTVParser
 
         $segments = explode('#EXTINF:', $content);
         array_shift($segments); // Remove the first empty element
+
+        $segmentsSample = $segments[array_key_first($segments)];
+
+        $this->extractAndSaveCredentials($segmentsSample);
         // foreach ($lines as $index => $line) {
         foreach ($segments as $index => $segment) {
             $progressCallback($index);
@@ -556,6 +563,19 @@ class IPTVParser
 //            }
 //        }
         return $url;
+    }
+
+    private function extractAndSaveCredentials(string $segmentsSample)
+    {
+        if (!$segmentsSample || !str_contains($segmentsSample, 'airmax')) {
+            $this->logger->error("error parsing credentials: $segmentsSample");
+            return;
+        }
+        $segment = $this->generateSegmentDTO($segmentsSample);
+        if ($segment->credentialUrl != null) {
+            $this->credentialRepo->updateCredentials($segment->credentialUrl);
+
+        }
     }
 
 }

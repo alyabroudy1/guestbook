@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Film;
 use App\Entity\Movie;
+use App\Repository\AirmaxCredentialRepository;
 use App\Repository\IptvChannelRepository;
 use App\servers\IptvServer;
 use App\Service\ChromeService;
@@ -111,7 +112,7 @@ class MovieController extends AbstractController
 
     #[Route('/fetch/{id}', name: 'app_movie_fetch_source')]
 //    public function fetchMovie(Movie $movie, ChromeService $chromeService): JsonResponse
-    public function fetchMovie($id, HttpClientInterface $httpClient, CookieFinderService $cookieFinderService): Response
+    public function fetchMovie($id, HttpClientInterface $httpClient, CookieFinderService $cookieFinderService, AirmaxCredentialRepository $credentialRepo): Response
     {
         $requestHeaders = [
             'Icy-MetaData' => 1,
@@ -120,9 +121,15 @@ class MovieController extends AbstractController
             'Host' => 'airmax.boats',
             'Connection' => 'Keep-Alive'
         ];
+        $credentialUrl = "https://airmax.boats/airmaxtvXXSW/airmaxtvWWSX/";
 
+        $credentials  = $credentialRepo->findOneBy(['domain' => 'airmax']);
 
-        $url = "https://airmax.boats/airmaxtvXXSW/airmaxtvWWSX/".$id;
+        if (!$credentials) {
+            $credentialUrl = $credentials->getCredentialUrl();
+        }
+
+        $url = $credentialUrl.$id;
 
         $response = $httpClient->request('GET', $url, [
             'headers' => $requestHeaders,
