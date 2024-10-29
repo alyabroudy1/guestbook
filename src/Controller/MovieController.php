@@ -12,6 +12,7 @@ use App\Service\CookieFinderService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mime\Encoder\EncoderInterface;
@@ -157,7 +158,11 @@ class MovieController extends AbstractController
         $queryString = http_build_query($requestHeaders);
         $delimiter = '|';
 
-        return $this->redirect($videoUrl. $delimiter . $queryString);
+//        return $this->redirect($videoUrl. $delimiter . $queryString);
+
+        $response = new RedirectResponse($videoUrl . $delimiter . $queryString);
+        $response->headers->set('Access-Control-Allow-Origin', '*');
+        return $response;
 
 //        $response = new JsonResponse(['message' => 'Processing request...']);
 //        $chromeService->getPageContents($movie->getLink()->getUrl());
@@ -170,7 +175,7 @@ class MovieController extends AbstractController
 //        $json = $this->serialize($result);
 
 //        return JsonResponse::fromJsonString($json);
-        return new JsonResponse();
+//        return new JsonResponse();
     }
 //
 //    #[Route('/fetchSource/{source}', name: 'app_movie_fetch_source')]
