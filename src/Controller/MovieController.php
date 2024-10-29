@@ -11,6 +11,7 @@ use App\Service\ChromeService;
 use App\Service\CookieFinderService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
+use Symfony\Component\HttpClient\Response\AmpResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -122,16 +123,16 @@ class MovieController extends AbstractController
             'Host' => 'airmax.boats',
             'Connection' => 'Keep-Alive'
         ];
-        $credentialUrl = "https://airmax.boats/airmaxtvXXSW/airmaxtvWWSX/";
+        $credentialUrl = "https://airmax.boats/airmaxtvMAX/airmaxtvXAM/";
 
         $credentials  = $credentialRepo->findOneBy(['domain' => 'airmax']);
 
-        if (!$credentials) {
+        if ($credentials) {
             $credentialUrl = $credentials->getCredentialUrl();
         }
 
         $url = $credentialUrl.$id;
-
+        /** @var AmpResponse $response */
         $response = $httpClient->request('GET', $url, [
             'headers' => $requestHeaders,
         ]);
@@ -142,14 +143,15 @@ class MovieController extends AbstractController
             // fail to fetch video url
             return new JsonResponse([], Response::HTTP_NO_CONTENT);
         }
-        $videoUrl = null;
-        $locationKey = 'Location:';
-        foreach ($responseHeaders as $header) {
-            if (str_contains($header, $locationKey)){
-                $videoUrl =trim(str_replace($locationKey, '', $header));
-                break;
-            }
-        }
+        $videoUrl = $response->getInfo()['url'];
+//        $videoUrl = null;
+//        $locationKey = 'Location:';
+//        foreach ($responseHeaders as $header) {
+//            if (str_contains($header, $locationKey)){
+//                $videoUrl =trim(str_replace($locationKey, '', $header));
+//                break;
+//            }
+//        }
         if (!$videoUrl){
             return new JsonResponse([], Response::HTTP_NO_CONTENT);
         }
