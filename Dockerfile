@@ -51,6 +51,7 @@ RUN set -eux; \
 		intl \
 		opcache \
 		zip \
+    	sockets \
 	;
 
 # https://getcomposer.org/doc/03-cli.md#composer-allow-superuser
