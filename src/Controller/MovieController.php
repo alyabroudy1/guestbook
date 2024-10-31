@@ -11,7 +11,9 @@ use App\Service\ChromeService;
 use App\Service\CookieFinderService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
+use Symfony\Component\HttpClient\AmpHttpClient;
 use Symfony\Component\HttpClient\Response\AmpResponse;
+use Symfony\Component\HttpClient\Response\CurlResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -116,6 +118,7 @@ class MovieController extends AbstractController
 //    public function fetchMovie(Movie $movie, ChromeService $chromeService): JsonResponse
     public function fetchMovie($id, HttpClientInterface $httpClient, CookieFinderService $cookieFinderService, AirmaxCredentialRepository $credentialRepo): Response
     {
+        $httpClient = new AmpHttpClient();
         $requestHeaders = [
             'Icy-MetaData' => 1,
             'User-Agent' => 'airmaxtv',
@@ -132,7 +135,8 @@ class MovieController extends AbstractController
         }
 
         $url = $credentialUrl.$id;
-        /** @var AmpResponse $response */
+
+        /** @var CurlResponse $response */
         $response = $httpClient->request('GET', $url, [
             'headers' => $requestHeaders,
         ]);
@@ -224,7 +228,7 @@ class MovieController extends AbstractController
 
     private function getRedirectFromAmpResponse(AmpResponse $response)
     {
-        $symfonyResponse = new Response('$response->getContent()', $response->getStatusCode(), $response->getHeaders());
+        $symfonyResponse = new Response($response->getContent(), $response->getStatusCode(), $response->getHeaders());
         // Set headers from the original response
         foreach ($response->getInfo() as $name => $values) {
             if ($name === 'response_headers') {
@@ -234,6 +238,7 @@ class MovieController extends AbstractController
                 $symfonyResponse->headers->set($name, $values);
             }
         }
+
         return $symfonyResponse;
     }
 
