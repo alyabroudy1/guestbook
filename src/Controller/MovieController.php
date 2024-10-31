@@ -136,7 +136,7 @@ class MovieController extends AbstractController
 
         $url = $credentialUrl.$id;
 
-        /** @var CurlResponse $response */
+        /** @var AmpResponse $response */
         $response = $httpClient->request('GET', $url, [
             'headers' => $requestHeaders,
         ]);
@@ -228,16 +228,18 @@ class MovieController extends AbstractController
 
     private function getRedirectFromAmpResponse(AmpResponse $response)
     {
-        $symfonyResponse = new Response($response->getContent(), $response->getStatusCode(), $response->getHeaders());
+        $videoUrl = $response->getInfo()['url'];
+        $symfonyResponse = new RedirectResponse($videoUrl, Response::HTTP_FOUND, $response->getHeaders());
+
         // Set headers from the original response
-        foreach ($response->getInfo() as $name => $values) {
-            if ($name === 'response_headers') {
-                continue;
-            }
-            if (is_array($values) || is_string($values) || $values === null) {
-                $symfonyResponse->headers->set($name, $values);
-            }
-        }
+//        foreach ($response->getInfo() as $name => $values) {
+//            if ($name === 'response_headers') {
+//                continue;
+//            }
+//            if (is_array($values) || is_string($values) || $values === null) {
+//                $symfonyResponse->headers->set($name, $values);
+//            }
+//        }
 
         return $symfonyResponse;
     }
