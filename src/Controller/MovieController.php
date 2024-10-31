@@ -2,6 +2,8 @@
 
 namespace App\Controller;
 
+use Amp\Http\Client\Connection\DefaultConnectionFactory;
+use Amp\Http\Client\HttpClient;
 use App\Entity\Film;
 use App\Entity\Movie;
 use App\Repository\AirmaxCredentialRepository;
@@ -9,6 +11,7 @@ use App\Repository\IptvChannelRepository;
 use App\servers\IptvServer;
 use App\Service\ChromeService;
 use App\Service\CookieFinderService;
+use Artax\Client;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
 use Symfony\Component\HttpClient\AmpHttpClient;
@@ -18,6 +21,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Mime\Encoder\EncoderInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\Encoder\JsonEncode;
@@ -226,7 +230,37 @@ class MovieController extends AbstractController
         return $json;
     }
 
-    private function getRedirectFromAmpResponse(AmpResponse $response)
+    public function streamMedia($url, $headers): StreamedResponse
+    {
+        $response = new StreamedResponse(function () use ($url, $headers) {
+            $contextOptions = [
+                'http' => [
+                    'header' => $headers
+                ]
+            ];
+            $context = stream_context_create($contextOptions);
+
+            // Open the file stream
+            if ($stream = fopen($url, 'rb', false, $context)) {
+                while (!feof($stream)) {
+                    echo fread($stream, 8192); // Read and output in chunks
+                    flush(); // Ensure data is sent to the client immediately
+                }
+                fclose($stream); // Close the stream when done
+            } else {
+                throw new \Exception('Unable to open stream.');
+            }
+        });
+
+        // Set the appropriate headers for the media type
+        $response->headers->set('Content-Type', $headers['content-type']); // Change as needed
+        $response->headers->set('Content-Disposition', 'inline; filename="live-stream.mp4"'); // Change filename as needed
+
+        return $response;
+    }
+
+
+        private function getRedirectFromAmpResponse(AmpResponse $response)
     {
         $videoUrl = $response->getInfo()['url'];
         $symfonyResponse = new RedirectResponse($videoUrl, Response::HTTP_FOUND, $response->getHeaders());
@@ -240,6 +274,8 @@ class MovieController extends AbstractController
 //                $symfonyResponse->headers->set($name, $values);
 //            }
 //        }
+            return $this->streamMedia($videoUrl, $response->getHeaders());
+        dd($response);
         $symfonyResponse->headers->set('primary-ip', '77.247.109.133');
 
         return $symfonyResponse;

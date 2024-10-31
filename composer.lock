@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ac75bb3c076b59a5eae697f7aff9a596",
+    "content-hash": "5443f768d58d07e08bb4ba565850ea3d",
     "packages": [
         {
             "name": "amphp/amp",
@@ -94,6 +94,57 @@
                 }
             ],
             "time": "2024-03-21T18:52:26+00:00"
+        },
+        {
+            "name": "amphp/artax",
+            "version": "v0.7.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/amphp/artax.git",
+                "reference": "ea83d1a3f2385893517907e3fd975e62c36f9913"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/amphp/artax/zipball/ea83d1a3f2385893517907e3fd975e62c36f9913",
+                "reference": "ea83d1a3f2385893517907e3fd975e62c36f9913",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.4.0",
+                "rdlowrey/alert": "~0.1.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Daniel Lowrey",
+                    "email": "rdlowrey@gmail.com",
+                    "role": "Creator / Lead Developer"
+                }
+            ],
+            "description": "An object-oriented HTTP/1.1 client with no cURL dependency",
+            "homepage": "https://github.com/rdlowrey/Artax",
+            "keywords": [
+                "async",
+                "client",
+                "http",
+                "parallel",
+                "rest"
+            ],
+            "support": {
+                "issues": "https://github.com/amphp/artax/issues",
+                "source": "https://github.com/amphp/artax/tree/v0.7.0"
+            },
+            "abandoned": "amphp/http-client",
+            "time": "2014-04-10T18:27:10+00:00"
         },
         {
             "name": "amphp/byte-stream",
@@ -3704,6 +3755,55 @@
                 "source": "https://github.com/ralouphie/getallheaders/tree/develop"
             },
             "time": "2019-03-08T08:55:37+00:00"
+        },
+        {
+            "name": "rdlowrey/alert",
+            "version": "v0.1.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/rdlowrey/alert.git",
+                "reference": "71e3331d21f90b9143ee91513560fa891e09f1ec"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/rdlowrey/alert/zipball/71e3331d21f90b9143ee91513560fa891e09f1ec",
+                "reference": "71e3331d21f90b9143ee91513560fa891e09f1ec",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "Alert": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Daniel Lowrey",
+                    "email": "rdlowrey@gmail.com",
+                    "role": "Creator / Lead Developer"
+                }
+            ],
+            "description": "Event loops for event-driven/async PHP",
+            "homepage": "https://github.com/rdlowrey/alert",
+            "keywords": [
+                "async",
+                "events",
+                "libevent",
+                "non-blocking"
+            ],
+            "support": {
+                "issues": "https://github.com/rdlowrey/alert/issues",
+                "source": "https://github.com/rdlowrey/alert/tree/v0.1.2"
+            },
+            "abandoned": "amphp/amp",
+            "time": "2013-08-12T15:35:18+00:00"
         },
         {
             "name": "runtime/frankenphp-symfony",
