@@ -143,6 +143,9 @@ class MovieController extends AbstractController
             // fail to fetch video url
             return new JsonResponse([], Response::HTTP_NO_CONTENT);
         }
+
+//        dd($response, $response->getHeaders(), $response->getInfo(), new Response());
+        return $this->getRedirectFromAmpResponse($response);
         $videoUrl = $response->getInfo()['url'];
 //        $videoUrl = null;
 //        $locationKey = 'Location:';
@@ -161,8 +164,7 @@ class MovieController extends AbstractController
         $delimiter = '|';
 
 //        return $this->redirect($videoUrl. $delimiter . $queryString);
-
-        $response = new RedirectResponse($videoUrl . $delimiter . $queryString);
+         $response = new RedirectResponse($videoUrl . $delimiter . $queryString);
         $response->headers->set('Access-Control-Allow-Origin', '*');
         return $response;
 
@@ -218,6 +220,21 @@ class MovieController extends AbstractController
         );
 
         return $json;
+    }
+
+    private function getRedirectFromAmpResponse(AmpResponse $response)
+    {
+        $symfonyResponse = new Response('$response->getContent()', $response->getStatusCode(), $response->getHeaders());
+        // Set headers from the original response
+        foreach ($response->getInfo() as $name => $values) {
+            if ($name === 'response_headers') {
+                continue;
+            }
+            if (is_array($values) || is_string($values) || $values === null) {
+                $symfonyResponse->headers->set($name, $values);
+            }
+        }
+        return $symfonyResponse;
     }
 
 }
