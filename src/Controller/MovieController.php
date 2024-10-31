@@ -240,6 +240,7 @@ class MovieController extends AbstractController
 //                $symfonyResponse->headers->set($name, $values);
 //            }
 //        }
+        $symfonyResponse->headers->set('primary-ip', '77.247.109.133');
 
         return $symfonyResponse;
     }
