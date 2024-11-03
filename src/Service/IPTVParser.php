@@ -410,11 +410,12 @@ class IPTVParser
             $segmentDTO->tvgLogo = $tvgLogo;
             $segmentDTO->groupTitle = $groupTitle;
             $segmentDTO->name = $name;
-            if ($fileName) {
-                $segmentDTO->url = 'http://194.164.53.40/movie/fetch/' . $fileName;
-            } else {
-                $segmentDTO->url = $url;
-            }
+//            if ($fileName) {
+//                $segmentDTO->url = 'http://194.164.53.40/movie/fetch/' . $fileName;
+//            } else {
+//                $segmentDTO->url = $url;
+//            }
+            $segmentDTO->url = $url;
             $segmentDTO->fileName = $fileName;
             $segmentDTO->credentialUrl = $credentialUrl;
             return $segmentDTO;
