@@ -25,7 +25,11 @@ class IptvChannelRepository extends ServiceEntityRepository
         'Shahid',
         'أم بي سي',
         'NEWS الاخبار',
-        'Children أطفال'
+        'Syria سورية',
+        'Children',
+        '🇩🇪 Germany',
+        'SPORT رياضية',
+        'SPORT VIP',
     ];
     public function __construct(ManagerRegistry $registry)
     {
@@ -97,7 +101,7 @@ class IptvChannelRepository extends ServiceEntityRepository
                 ->getResult();
             $result[] = $resultList;
         }
-        $result[]  = $this->getHomepagePaidFavoritesChannels();
+//        $result[]  = $this->getHomepagePaidFavoritesChannels();
         return $result;
     }
 
