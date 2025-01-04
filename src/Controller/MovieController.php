@@ -123,7 +123,7 @@ class MovieController extends AbstractController
 //    public function fetchMovie(Movie $movie, ChromeService $chromeService): JsonResponse
     public function fetchMovie(Movie $movie, HttpClientInterface $httpClient, CookieFinderService $cookieFinderService, AirmaxCredentialRepository $credentialRepo): Response
     {
-        dd($movie);
+
         $movieList =  $this->serversController->fetchMovie($movie);
         $results['category'] = 'Fetch';
         $results['result'] = $movieList;
