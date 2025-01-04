@@ -802,7 +802,7 @@ class MyCima extends AbstractServer
 //            $boxs = $crawler->filter('.Episodes--Seasons--Episodes');
             $boxs = null;
             if ($movie instanceof Series){
-                $boxs = $crawler->filter('.List--Seasons--Episodes');
+                $boxs = $crawler->filter('.[class*="List--Seasons--Episodes"]');
             }
 
             $resultMovieType = MovieType::Season;
