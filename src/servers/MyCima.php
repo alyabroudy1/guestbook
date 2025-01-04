@@ -802,7 +802,7 @@ class MyCima extends AbstractServer
 //            $boxs = $crawler->filter('.Episodes--Seasons--Episodes');
             $boxs = null;
             if ($movie instanceof Series){
-                $boxs = $crawler->filter('.[class*="List--Seasons--Episodes"]');
+                $boxs = $crawler->filter('[class*="List--Seasons--Episodes"]');
             }
 
             $resultMovieType = MovieType::Season;
@@ -812,7 +812,7 @@ class MyCima extends AbstractServer
                 $resultMovieType = MovieType::Episode;
             }
 
-            $boxs->each(function (Crawler $box) use (&$movies, $crawler, $movie, $desc, $resultMovieType) {
+            $boxs?->each(function (Crawler $box) use (&$movies, $crawler, $movie, $desc, $resultMovieType) {
                 $lis = $box->filter('a');
 
                 $lis->each(function (Crawler $li) use (&$movies, $movie, $desc, $resultMovieType) {
