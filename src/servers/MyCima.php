@@ -798,16 +798,15 @@ class MyCima extends AbstractServer
             if ($descElem->count() > 0) {
                 $desc = $descElem->text();
             }
-
 //            $boxs = $crawler->filter('.Episodes--Seasons--Episodes');
             $boxs = null;
             if ($movie instanceof Series){
                 $boxs = $crawler->filter('[class*="List--Seasons--Episodes"]');
             }
-
+  
             $resultMovieType = MovieType::Season;
 
-            if ($boxs?->count() === 0) {
+            if (!$boxs || $boxs->count() === 0) {
                 $boxs = $crawler->filter('[class*="Episodes--Seasons--Episodes"]');
                 $resultMovieType = MovieType::Episode;
             }
