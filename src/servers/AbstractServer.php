@@ -131,14 +131,20 @@ abstract class AbstractServer
 
     public function fetchGroup(Movie $movie, CookieFinderService $cookieFinderService): ?array
     {
-        $url = $this->getConfig()->getAuthority() . $movie->getLink()->getUrl();
+
+        $url = $movie->getLink()->getUrl();
+
+        if (!str_starts_with($url, 'http')){
+            $url = $this->getConfig()->getAuthority() . $movie->getLink()->getUrl();
+        }
         try {
             $response = $this->getRequest($url);
 //            dump('AbstractServer fetchGroup: code: ' . $response->getStatusCode());
+
             $chromeWebContentDTO = new ChromeWebContentDTO($response->getContent(), $response->getHeaders());
             return $this->generateGroupMovies($chromeWebContentDTO, $movie);
         } catch (ClientException | TransportExceptionInterface  $e) {
-//            dump('AbstractServer fetchGroup: error: ' .$e->getMessage());
+            dd('AbstractServer fetchGroup: error: ' .$e->getMessage());
             $chromeWebContentDTO = $cookieFinderService->findCookies($movie->getLink()->getUrl(), $this->getConfig());
             return $this->generateGroupMovies($chromeWebContentDTO, $movie);
 //            dd('fetchMovie: ', $chromeWebContentDTO);

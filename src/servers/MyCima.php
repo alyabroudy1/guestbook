@@ -785,7 +785,6 @@ class MyCima extends AbstractServer
 
     protected function generateGroupMovies(ChromeWebContentDTO $chromeWebContentDTO, Movie $movie): array
     {
-
         $movies = [];
         try {
             $content = $chromeWebContentDTO->content;
@@ -799,6 +798,7 @@ class MyCima extends AbstractServer
             if ($descElem->count() > 0) {
                 $desc = $descElem->text();
             }
+
 //            $boxs = $crawler->filter('.Episodes--Seasons--Episodes');
             $boxs = null;
             if ($movie instanceof Series){
@@ -807,8 +807,8 @@ class MyCima extends AbstractServer
 
             $resultMovieType = MovieType::Season;
 
-            if (!$boxs) {
-                $boxs = $crawler->filter('.Episodes--Seasons--Episodes');
+            if ($boxs?->count() === 0) {
+                $boxs = $crawler->filter('[class*="Episodes--Seasons--Episodes"]');
                 $resultMovieType = MovieType::Episode;
             }
 

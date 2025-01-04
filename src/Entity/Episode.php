@@ -13,7 +13,7 @@ use Symfony\Component\Serializer\Annotation\MaxDepth;
 class Episode extends Movie
 {
     #[ORM\ManyToOne(cascade: ['remove', 'persist'], inversedBy: 'episodes')]
-    private ?Movie $season = null;
+    private ?Season $season = null;
     public function __construct()
     {
         parent::__construct();
@@ -30,7 +30,7 @@ class Episode extends Movie
         return $this->season;
     }
 
-    public function setSeason(?Movie $season): static
+    public function setSeason(?Season $season): static
     {
         $this->season = $season;
 

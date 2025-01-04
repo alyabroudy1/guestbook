@@ -100,7 +100,8 @@ class ServersController extends AbstractController
             try {
                 return $server->fetchItem($movie, $this->cookieFinderService);
             }catch (\Exception $exception){
-                dd('fetchMovie: '. $exception->getMessage(), get_class($exception));
+                dump('fetchMovie: '. $exception->getMessage(), get_class($exception));
+                return [];
             }
         }
 
