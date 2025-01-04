@@ -120,7 +120,18 @@ class MovieController extends AbstractController
 
     #[Route('/fetch/{id}', name: 'app_movie_fetch_source')]
 //    public function fetchMovie(Movie $movie, ChromeService $chromeService): JsonResponse
-    public function fetchMovie($id, HttpClientInterface $httpClient, CookieFinderService $cookieFinderService, AirmaxCredentialRepository $credentialRepo): Response
+    public function fetchMovie(Movie $movie, HttpClientInterface $httpClient, CookieFinderService $cookieFinderService, AirmaxCredentialRepository $credentialRepo): Response
+    {
+        $movieList =  $this->serversController->fetchMovie($movie);
+        $results['category'] = 'Fetch';
+        $results['result'] = $movieList;
+        $json = $this->serialize($results);
+        return JsonResponse::fromJsonString($json);
+    }
+
+    #[Route('/fetchChannel/{id}', name: 'app_movie_fetch_channel')]
+//    public function fetchMovie(Movie $movie, ChromeService $chromeService): JsonResponse
+    public function fetchMovieChannel($id, HttpClientInterface $httpClient, CookieFinderService $cookieFinderService, AirmaxCredentialRepository $credentialRepo): Response
     {
         $httpClient = new AmpHttpClient();
         $requestHeaders = [
@@ -134,7 +145,7 @@ class MovieController extends AbstractController
 
         $credentials  = $credentialRepo->findOneBy(['domain' => 'airmax']);
 
-        if ($credentials) {
+        if (!$credentials) {
             $credentialUrl = $credentials->getCredentialUrl();
         }
 
