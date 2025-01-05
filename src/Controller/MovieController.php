@@ -65,7 +65,7 @@ class MovieController extends AbstractController
         $isTv = $request->query->get('tv');
 
 //        return new Response($query);
-         $movieList = $this->serversController->search($query);
+//         $movieList = $this->serversController->search($query);
 
 //        $movieList = $iptvRepo->search($query);
         $categoryList = $iptvRepo->search($query);
@@ -79,7 +79,7 @@ class MovieController extends AbstractController
 //            'result' => $movieList,]
 //        ];
 
-        $categoryList['result'] = array_merge($categoryList['result'], $movieList);
+//        $categoryList['result'] = array_merge($categoryList['result'], $movieList);
 
         $json = $this->serialize($categoryList);
         return JsonResponse::fromJsonString($json);
@@ -94,7 +94,7 @@ class MovieController extends AbstractController
     #[Route('/homepage', name: 'app_movie_homepage')]
     public function homepage(IptvChannelRepository $iptvRepo): JsonResponse
     {
-        $movieList = $this->serversController->getHomepageMovies();
+//        $movieList = $this->serversController->getHomepageMovies();
 
 //        $json = $this->serialize($movieList);
 //        $data = [
