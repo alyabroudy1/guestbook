@@ -29,6 +29,8 @@ class IptvChannelRepository extends ServiceEntityRepository
         'Syria سورية',
         'Children',
         '🇩🇪 Germany',
+        '🕌Islami اسلامية',
+        'Al Majd قنوات المجد',
 //        'SPORT رياضية',
 //        'SPORT VIP',
     ];
