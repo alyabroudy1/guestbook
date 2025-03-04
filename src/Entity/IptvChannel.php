@@ -16,7 +16,7 @@ class IptvChannel extends Movie
     private ?string $tvgName = null;
 
     #[Groups('movie_export')]
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(length: 512, nullable: true)]
     private ?string $tvgLogo = null;
 
     #[Groups('movie_export')]

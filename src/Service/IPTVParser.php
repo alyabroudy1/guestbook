@@ -579,4 +579,63 @@ class IPTVParser
         }
     }
 
+    public function parseInfoLine(string $infoLine)
+    {
+        if (!str_starts_with($infoLine, '#EXTINF')) {
+            return null;
+        }
+
+        $tvgLogo = $this->extractAttribute($infoLine, 'tvg-logo');
+
+        if ($tvgLogo == 'https://bit.ly/3JQfa8u') {
+            return null;
+        }
+        $groupTitle = $this->extractAttribute($infoLine, 'group-title');
+
+        if (str_contains(trim($groupTitle), 'sport')) {
+            return null;
+        }
+
+        $tvgId = $this->extractAttribute($infoLine, 'tvg-id');
+        $tvgName = $this->extractAttribute($infoLine, 'tvg-name');
+
+
+        $name = trim(substr($infoLine, strrpos($infoLine, ',') + 1));
+
+
+        $iptvChannel = new IptvChannel();
+//        $iptvChannel->setUrl($tvgId);
+        $iptvChannel->setTvgName($tvgName ?? $tvgId);
+        $iptvChannel->setTvgLogo($tvgLogo);
+        $iptvChannel->setGroupTitle($groupTitle);
+        $iptvChannel->setTitle($name !== '' ? $name : $tvgName);
+//            if ($fileName) {
+//                $segmentDTO->url = 'http://194.164.53.40/movie/fetch/' . $fileName;
+//            } else {
+//                $segmentDTO->url = $url;
+//            }
+//        $segmentDTO->url = $url;
+//        $segmentDTO->fileName = $fileName;
+//        $segmentDTO->credentialUrl = $credentialUrl;
+        return $iptvChannel;
+    }
+
+    public function parseCurrentIptvSegmentExtraInfo(string $line, IptvChannel $currentSegment)
+    {
+        if (str_starts_with($line, 'http')) {
+            $currentSegment->setUrl($line);
+        }
+
+        // todo extract :
+//        if (strpos($line, '#EXTVLCOPT:') === 0) {
+//            if (strpos($line, 'http-user-agent=') !== false) {
+//                $userAgent = $this->extractVlcOpt($line, 'http-user-agent');
+//            } elseif (strpos($line, 'http-referrer=') !== false) {
+//                $referrer = $this->extractVlcOpt($line, 'http-referrer');
+//            }
+//        }
+
+        return $currentSegment;
+    }
+
 }
