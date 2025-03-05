@@ -67,8 +67,8 @@ class MovieController extends AbstractController
 //        return new Response($query);
 //         $movieList = $this->serversController->search($query);
 
-//        $movieList = $iptvRepo->search($query);
-        $categoryList = $iptvRepo->search($query);
+        $movieList = $iptvRepo->search($query);
+//        $categoryList = $iptvRepo->search($query);
 
 //        foreach ($categoryList as $category) {
 //
@@ -81,7 +81,8 @@ class MovieController extends AbstractController
 
 //        $categoryList['result'] = array_merge($categoryList['result'], $movieList);
 
-        $json = $this->serialize($categoryList);
+
+        $json = $this->serialize($isTv ? $movieList : [$movieList]);
         return JsonResponse::fromJsonString($json);
     }
 
